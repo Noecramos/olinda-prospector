@@ -51,6 +51,11 @@ ZAPPY_CATEGORIES = [
     "Quentinha",
     "Food truck",
     "Delivery de comida",
+    "Lanches",
+    "Hot dog",
+    "Salgaderia",
+    "Cachorro quente",
+    "Burger",
     # Drinks
     "Casa de sucos",
     "Distribuidora de bebidas",
@@ -66,6 +71,17 @@ ZAPPY_CATEGORIES = [
     "Marisqueira",
     "Buffet",
     "Self service",
+    "Comida chinesa",
+    "Comida mexicana",
+    "Comida árabe",
+    "Comida italiana",
+    "Comida vegana",
+    "Comida vegetariana",
+    "Comida fit",
+    "Açaiteria",
+    "Gelateria",
+    "Casa de bolos",
+    "Depósito de bebidas",
 ]
 
 LOJAKY_CATEGORIES = [
@@ -344,10 +360,17 @@ async def _scrape_category(
 
             # Try to get a better name from the detail panel h1
             try:
-                name_el = await page.query_selector('div[role="main"] h1')
+                # Try multiple selectors for the business name
+                name_el = await page.query_selector('h1.DUwDvf')
+                if not name_el:
+                    name_el = await page.query_selector('div[role="main"] h1.fontHeadlineLarge')
+                if not name_el:
+                    name_el = await page.query_selector('div[role="main"] h1')
+                    
                 if name_el:
                     detail_name = (await name_el.inner_text()).strip()
-                    if detail_name and detail_name.lower() not in ("resultados", "results"):
+                    # Only use if it's not a generic term
+                    if detail_name and detail_name.lower() not in ("resultados", "results", "resultado", "result"):
                         business_name = detail_name
             except Exception:
                 pass

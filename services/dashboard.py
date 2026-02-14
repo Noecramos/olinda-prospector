@@ -38,7 +38,7 @@ _DASHBOARD_TEMPLATE = """<!DOCTYPE html>
   --green:#22c55e;--amber:#f59e0b;--red:#ef4444;--cyan:#06b6d4;
 }
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-.container{max-width:1400px;margin:0 auto;padding:24px 20px}
+.container{max-width:1800px;margin:0 auto;padding:24px 20px}
 
 /* Header */
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px}
@@ -70,10 +70,11 @@ select:focus,input:focus{border-color:var(--accent)}
 
 /* Table */
 .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:800px}
+table{width:100%;border-collapse:collapse;table-layout:auto}
 thead{background:var(--surface)}
-th{padding:10px 10px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)}
-td{padding:8px 10px;font-size:.8rem;border-bottom:1px solid var(--border);white-space:nowrap}
+th{padding:10px 14px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:8px 14px;font-size:.8rem;border-bottom:1px solid var(--border);white-space:normal;word-break:break-word}
+td:first-child,td:nth-child(6),td:nth-child(7),td:nth-child(8){white-space:nowrap}
 tr:last-child td{border-bottom:none}
 tr:hover{background:rgba(124,92,252,.04)}
 .badge{padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:600;letter-spacing:.5px}
