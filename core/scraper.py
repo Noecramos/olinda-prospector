@@ -495,14 +495,32 @@ async def run_scraper(pool: asyncpg.Pool, proxy_rotator: ProxyRotator | None = N
         )
 
         query_num = 0
+        BROWSER_RESTART_INTERVAL = 500  # Restart browser every N queries to avoid memory crashes
         for category in categories:
             for location in locations:
                 query_num += 1
+                
+                # Restart browser periodically to prevent memory exhaustion
+                if query_num % BROWSER_RESTART_INTERVAL == 0:
+                    logger.info("🔄 Restarting browser at query %d/%d to free memory", query_num, total_queries)
+                    await page.close()
+                    await context.close()
+                    await browser.close()
+                    browser = await pw.chromium.launch(**launch_args)
+                    context = await browser.new_context(
+                        locale="pt-BR",
+                        geolocation={"latitude": -8.0089, "longitude": -34.8553},
+                        permissions=["geolocation"],
+                        viewport={"width": 1280, "height": 900},
+                    )
+                    page = await context.new_page()
+                
                 try:
                     count = await _scrape_category(
                         page, category, pool, mode=mode, location=location,
                     )
                     total_inserted += count
+                    # Only log if we actually found new leads (reduce log spam)
                     if count:
                         logger.info(
                             "[%d/%d] '%s' @ %s: %d new leads",
