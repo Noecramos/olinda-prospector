@@ -393,11 +393,28 @@ async def _scrape_category(
 
             target = _classify_target_saas(mode)
 
-            for wa in whatsapp_numbers:
+            # Save business - with or without phone
+            if whatsapp_numbers:
+                # Has phone(s) - save each
+                for wa in whatsapp_numbers:
+                    was_inserted = await upsert_lead(
+                        pool,
+                        business_name=business_name,
+                        whatsapp=wa,
+                        neighborhood=neighborhood,
+                        category=category,
+                        google_rating=rating,
+                        target_saas=target,
+                    )
+                    if was_inserted:
+                        inserted += 1
+                        logger.info("  → Lead: %s | %s | %s", business_name, wa, neighborhood)
+            else:
+                # No phone found - save anyway for manual enrichment
                 was_inserted = await upsert_lead(
                     pool,
                     business_name=business_name,
-                    whatsapp=wa,
+                    whatsapp=None,
                     neighborhood=neighborhood,
                     category=category,
                     google_rating=rating,
@@ -405,7 +422,7 @@ async def _scrape_category(
                 )
                 if was_inserted:
                     inserted += 1
-                    logger.info("  → Lead: %s | %s | %s", business_name, wa, neighborhood)
+                    logger.info("  → Lead (no phone): %s | %s", business_name, neighborhood)
 
             # Go back to results
             await page.go_back(wait_until="domcontentloaded", timeout=15_000)

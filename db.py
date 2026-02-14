@@ -56,20 +56,20 @@ async def upsert_lead(
     pool: asyncpg.Pool,
     *,
     business_name: str,
-    whatsapp: str,
+    whatsapp: str | None = None,
     neighborhood: str | None = None,
     category: str | None = None,
     google_rating: float | None = None,
     target_saas: str | None = None,
 ) -> bool:
     """
-    Insert a lead, ignoring duplicates on `whatsapp`.
+    Insert a lead, ignoring duplicates on (business_name, category).
     Returns True if a new row was inserted, False if it already existed.
     """
     query = """
         INSERT INTO leads_olinda (business_name, whatsapp, neighborhood, category, google_rating, target_saas)
         VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (whatsapp) DO NOTHING
+        ON CONFLICT (business_name, category) DO NOTHING
         RETURNING id;
     """
     async with pool.acquire() as conn:
@@ -78,7 +78,7 @@ async def upsert_lead(
         )
     inserted = row is not None
     if inserted:
-        logger.debug("Inserted lead: %s (%s)", business_name, whatsapp)
+        logger.debug("Inserted lead: %s (%s)", business_name, whatsapp or "no phone")
     return inserted
 
 
