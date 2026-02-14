@@ -15,6 +15,16 @@ class Settings:
     dashboard_port: int               # port for the dashboard web UI
     proxy_list: list[str] = field(default_factory=list)  # optional proxy URLs
 
+    # Prospector mode: "zappy" (food) or "lojaky" (retail)
+    mode: str = "zappy"
+
+    # WAHA (WhatsApp HTTP API) settings
+    waha_api_url: str = ""
+    waha_api_key: str = ""
+    waha_session: str = "default"
+    waha_enabled: bool = False
+    message_delay: float = 3.0        # seconds between WhatsApp messages
+
     @classmethod
     def from_env(cls) -> "Settings":
         database_url = os.getenv("DATABASE_URL")
@@ -30,6 +40,18 @@ class Settings:
         raw_proxies = os.getenv("PROXY_LIST", "")
         proxy_list = [p.strip() for p in raw_proxies.split(",") if p.strip()]
 
+        # Mode
+        mode = os.getenv("PROSPECTOR_MODE", "zappy").lower().strip()
+        if mode not in ("zappy", "lojaky"):
+            raise RuntimeError(f"PROSPECTOR_MODE must be 'zappy' or 'lojaky', got '{mode}'")
+
+        # WAHA
+        waha_api_url = os.getenv("WAHA_API_URL", "")
+        waha_api_key = os.getenv("WAHA_API_KEY", "")
+        waha_session = os.getenv("WAHA_SESSION", "default")
+        waha_enabled = bool(waha_api_url)
+        message_delay = float(os.getenv("MESSAGE_DELAY", "3.0"))
+
         return cls(
             database_url=database_url,
             n8n_webhook_url=n8n_webhook_url,
@@ -37,4 +59,10 @@ class Settings:
             scrape_interval=scrape_interval,
             dashboard_port=dashboard_port,
             proxy_list=proxy_list,
+            mode=mode,
+            waha_api_url=waha_api_url,
+            waha_api_key=waha_api_key,
+            waha_session=waha_session,
+            waha_enabled=waha_enabled,
+            message_delay=message_delay,
         )

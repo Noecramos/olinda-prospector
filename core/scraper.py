@@ -25,30 +25,179 @@ logger = logging.getLogger(__name__)
 # Also matches 8-digit landlines that some businesses list on WhatsApp Business
 WHATSAPP_RE = re.compile(r"(?:\+?55)\s*\(?(\d{2})\)?\s*(9?\d{4})[\s\-]?(\d{4})")
 
-# ── Expanded category list ──
-SEARCH_CATEGORIES = [
-    # Food & Beverage (→ Zappy)
+# ── Category lists by mode ──
+ZAPPY_CATEGORIES = [
+    # Core food
     "Restaurantes",
     "Pizzarias",
     "Lanchonetes",
-    "Bares",
-    "Cafés",
-    "Padarias",
     "Hamburguerias",
+    "Padarias",
+    "Cafés",
+    "Bares",
     "Sorveterias",
-    # Retail & Services (→ Lojaky)
-    "Lojas de varejo",
-    "Lojas de roupas",
-    "Salões de beleza",
-    "Barbearias",
-    "Pet shops",
-    "Farmácias",
-    "Óticas",
-    "Academias",
+    # Brazilian specialties
+    "Açaí",
+    "Churrascarias",
+    "Tapiocarias",
+    "Pastelarias",
+    "Espetinhos",
+    "Creperia",
+    "Doceria",
+    "Confeitaria",
+    # Quick-service & delivery
+    "Marmitaria",
+    "Comida caseira",
+    "Quentinha",
+    "Food truck",
+    "Delivery de comida",
+    # Drinks
+    "Casa de sucos",
+    "Distribuidora de bebidas",
+    "Cervejaria",
+    "Petiscaria",
+    # Specialty cuisine
+    "Comida japonesa",
+    "Sushi",
+    "Comida nordestina",
+    "Galeto",
+    "Frango assado",
+    "Peixaria",
+    "Marisqueira",
+    "Buffet",
+    "Self service",
 ]
+
+LOJAKY_CATEGORIES = [
+    # Fashion / Moda
+    "Lojas de roupas",
+    "Moda feminina",
+    "Moda masculina",
+    "Moda infantil",
+    "Moda praia",
+    "Lojas de calçados",
+    "Boutique",
+    "Loja de lingerie",
+    "Loja de bolsas",
+    "Loja de bijuterias",
+    "Loja de acessórios",
+    "Loja de tecidos",
+    # Beauty / Beleza
+    "Salões de beleza",
+    "Salão de cabelo",
+    "Barbearias",
+    "Manicure e pedicure",
+    "Clínica de estética",
+    "Estúdio de tatuagem",
+    "Design de sobrancelhas",
+    "Lojas de cosméticos",
+    "Perfumaria",
+    # Pet
+    "Pet shops",
+    "Banho e tosa",
+    "Clínica veterinária",
+    "Pet shop e veterinária",
+    # Health / Saúde
+    "Farmácias",
+    "Drogarias",
+    "Óticas",
+    "Clínica odontológica",
+    "Consultório médico",
+    "Clínica de fisioterapia",
+    "Laboratório de análises",
+    # Fitness
+    "Academias",
+    "Studio de pilates",
+    "Crossfit",
+    "Escola de dança",
+    "Escola de luta",
+    # Grocery / Mercados
+    "Supermercado",
+    "Mercadinho",
+    "Minimercado",
+    "Mercearia",
+    "Loja de conveniência",
+    "Hortifruti",
+    "Atacadão",
+    # Home / Casa
+    "Loja de móveis",
+    "Loja de material de construção",
+    "Loja de tintas",
+    "Loja de decoração",
+    "Loja de colchões",
+    "Loja de eletrodomésticos",
+    "Vidraçaria",
+    "Serralheria",
+    "Marcenaria",
+    # Tech / Eletrônicos
+    "Loja de celulares",
+    "Assistência técnica celular",
+    "Loja de eletrônicos",
+    "Loja de informática",
+    # Auto
+    "Autopeças",
+    "Oficina mecânica",
+    "Lava jato",
+    "Borracharia",
+    "Auto elétrica",
+    "Funilaria e pintura",
+    # Retail misc
+    "Lojas de varejo",
+    "Papelarias",
+    "Floricultura",
+    "Loja de brinquedos",
+    "Loja de presentes",
+    "Armarinho",
+    "Loja de embalagens",
+    # Services / Serviços
+    "Lavanderia",
+    "Chaveiro",
+    "Gráfica",
+    "Cartório",
+    "Imobiliária",
+    "Contabilidade",
+    "Escola de idiomas",
+    "Auto escola",
+    "Coworking",
+]
+
 SEARCH_LOCATION = "Olinda, PE"
 
-MAX_SCROLL_ATTEMPTS = 30
+# Olinda neighbourhoods — each one generates a separate Maps search per category
+OLINDA_NEIGHBORHOODS = [
+    "Casa Caiada",
+    "Bairro Novo",
+    "Rio Doce",
+    "Jardim Atlântico",
+    "Peixinhos",
+    "Ouro Preto",
+    "Cidade Tabajara",
+    "Águas Compridas",
+    "Amparo",
+    "Carmo",
+    "Varadouro",
+    "Salgadinho",
+    "Bultrins",
+    "Fragoso",
+    "Jardim Fragoso",
+    "Sapucaia",
+    "Monte",
+    "Guadalupe",
+    "Caixa D'Água",
+    "Alto da Sé",
+    "Amaro Branco",
+    "Bonsucesso",
+    "São Benedito",
+    "Passarinho",
+    "Alto da Bondade",
+    "Jardim Brasil",
+    "Sítio Novo",
+    "Aguazinha",
+    "Pau Amarelo",
+    "Jatobá",
+]
+
+MAX_SCROLL_ATTEMPTS = 40
 SELECTOR_RETRY = 3
 SELECTOR_TIMEOUT_MS = 8_000
 
@@ -76,17 +225,9 @@ def _extract_whatsapp_numbers(text: str) -> list[str]:
     return results
 
 
-def _classify_target_saas(category: str) -> str:
-    """Assign a target SaaS based on the business category."""
-    food_keywords = {
-        "restaurante", "pizzaria", "lanchonete", "bar", "café",
-        "padaria", "hamburgueria", "sorveteria",
-    }
-    cat_lower = category.lower()
-    for kw in food_keywords:
-        if kw in cat_lower:
-            return "Zappy"
-    return "Lojaky"
+def _classify_target_saas(mode: str) -> str:
+    """Return the target SaaS based on the prospector mode."""
+    return "Zappy" if mode == "zappy" else "Lojaky"
 
 
 async def _retry_selector(page: Page, selector: str, retries: int = SELECTOR_RETRY) -> Any:
@@ -119,7 +260,8 @@ async def _scroll_results(page: Page, feed_selector: str) -> None:
             pass
 
         await page.evaluate(
-            f'document.querySelector("{feed_selector}")?.scrollBy(0, 800)'
+            '(sel) => document.querySelector(sel)?.scrollBy(0, 800)',
+            feed_selector,
         )
         await asyncio.sleep(1.5)
 
@@ -128,9 +270,11 @@ async def _scrape_category(
     page: Page,
     category: str,
     pool: asyncpg.Pool,
+    mode: str = "zappy",
+    location: str = SEARCH_LOCATION,
 ) -> int:
     """Scrape a single category from Google Maps. Returns number of leads inserted."""
-    query = f"{category} em {SEARCH_LOCATION}"
+    query = f"{category} em {location}"
     url = f"https://www.google.com/maps/search/{query.replace(' ', '+')}"
     logger.info("Scraping: %s", url)
 
@@ -158,21 +302,55 @@ async def _scrape_category(
 
     # Collect listing links
     listings = await page.query_selector_all(f'{feed_selector} a[href*="/maps/place/"]')
-    logger.info("Found %d listings for '%s'", len(listings), category)
+    total_listings = len(listings)
+    logger.info("Found %d listings for '%s'", total_listings, category)
 
     inserted = 0
 
-    for idx, listing in enumerate(listings):
+    for idx in range(total_listings):
         try:
+            # Re-query listings each iteration to avoid stale references
+            current_listings = await page.query_selector_all(
+                f'{feed_selector} a[href*="/maps/place/"]'
+            )
+            if idx >= len(current_listings):
+                logger.info("No more listings available at index %d", idx)
+                break
+
+            listing = current_listings[idx]
+
+            # Extract business name from aria-label BEFORE clicking (most reliable)
+            business_name = await listing.get_attribute("aria-label") or ""
+            business_name = business_name.strip()
+            if not business_name or business_name.lower() in ("resultados", "results", ""):
+                # Fallback: try inner text of the listing
+                try:
+                    business_name = (await listing.inner_text()).strip().split("\n")[0]
+                except Exception:
+                    business_name = f"Negócio-{idx + 1}"
+
             # Click into the listing detail
             await listing.click()
-            await asyncio.sleep(2)
+            await asyncio.sleep(2.5)
 
-            # Extract business name
-            name_el = await page.query_selector("h1.fontHeadlineLarge")
-            if not name_el:
-                name_el = await page.query_selector("h1")
-            business_name = (await name_el.inner_text()).strip() if name_el else f"Unknown-{idx}"
+            # Wait for the detail panel to load (look for the action buttons area)
+            try:
+                await page.wait_for_selector(
+                    'button[data-item-id="phone"], button[data-item-id="address"], div[role="main"] h1',
+                    timeout=5000,
+                )
+            except PWTimeout:
+                pass
+
+            # Try to get a better name from the detail panel h1
+            try:
+                name_el = await page.query_selector('div[role="main"] h1')
+                if name_el:
+                    detail_name = (await name_el.inner_text()).strip()
+                    if detail_name and detail_name.lower() not in ("resultados", "results"):
+                        business_name = detail_name
+            except Exception:
+                pass
 
             # Extract rating
             rating: float | None = None
@@ -199,7 +377,7 @@ async def _scrape_category(
             body_text = await page.inner_text("body")
             whatsapp_numbers = _extract_whatsapp_numbers(body_text)
 
-            target = _classify_target_saas(category)
+            target = _classify_target_saas(mode)
 
             for wa in whatsapp_numbers:
                 was_inserted = await upsert_lead(
@@ -213,6 +391,7 @@ async def _scrape_category(
                 )
                 if was_inserted:
                     inserted += 1
+                    logger.info("  → Lead: %s | %s | %s", business_name, wa, neighborhood)
 
             # Go back to results
             await page.go_back(wait_until="domcontentloaded", timeout=15_000)
@@ -220,21 +399,24 @@ async def _scrape_category(
 
         except Exception as exc:
             logger.error("Error scraping listing %d in '%s': %s", idx, category, exc)
-            # Try to recover by navigating back
+            # Try to recover by navigating back to the search
             try:
-                await page.go_back(wait_until="domcontentloaded", timeout=10_000)
-                await asyncio.sleep(2)
+                await page.goto(url, wait_until="domcontentloaded", timeout=15_000)
+                await asyncio.sleep(3)
+                # Re-wait for feed
+                await _retry_selector(page, feed_selector)
+                await _scroll_results(page, feed_selector)
             except Exception:
                 break
 
     return inserted
 
 
-async def run_scraper(pool: asyncpg.Pool, proxy_rotator: ProxyRotator | None = None) -> int:
+async def run_scraper(pool: asyncpg.Pool, proxy_rotator: ProxyRotator | None = None, mode: str = "zappy") -> int:
     """
     Main entry point for the scraper.
     Launches Playwright, iterates over search categories, and returns total inserts.
-    Optionally uses a proxy rotator for each browser launch.
+    Mode selects which categories to scrape: 'zappy' (food) or 'lojaky' (retail).
     """
     total_inserted = 0
 
@@ -268,13 +450,38 @@ async def run_scraper(pool: asyncpg.Pool, proxy_rotator: ProxyRotator | None = N
         )
         page = await context.new_page()
 
-        for category in SEARCH_CATEGORIES:
-            try:
-                count = await _scrape_category(page, category, pool)
-                total_inserted += count
-                logger.info("Category '%s': %d new leads", category, count)
-            except Exception as exc:
-                logger.error("Failed to scrape category '%s': %s", category, exc)
+        categories = ZAPPY_CATEGORIES if mode == "zappy" else LOJAKY_CATEGORIES
+        target_saas = _classify_target_saas(mode)
+
+        # Build search locations: city-wide + each neighbourhood
+        locations = [SEARCH_LOCATION] + [
+            f"{n}, Olinda, PE" for n in OLINDA_NEIGHBORHOODS
+        ]
+        total_queries = len(categories) * len(locations)
+        logger.info(
+            "Mode: %s — %d categories × %d locations = %d queries",
+            mode, len(categories), len(locations), total_queries,
+        )
+
+        query_num = 0
+        for category in categories:
+            for location in locations:
+                query_num += 1
+                try:
+                    count = await _scrape_category(
+                        page, category, pool, mode=mode, location=location,
+                    )
+                    total_inserted += count
+                    if count:
+                        logger.info(
+                            "[%d/%d] '%s' @ %s: %d new leads",
+                            query_num, total_queries, category, location, count,
+                        )
+                except Exception as exc:
+                    logger.error(
+                        "[%d/%d] Failed '%s' @ %s: %s",
+                        query_num, total_queries, category, location, exc,
+                    )
 
         await browser.close()
 

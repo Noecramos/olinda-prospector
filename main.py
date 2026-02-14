@@ -27,6 +27,7 @@ from core.scraper import run_scraper
 from db import get_pool, init_db
 from services.dashboard import create_dashboard_app
 from services.dispatcher import dispatch_leads
+from services.waha import WahaClient
 
 # ──────────────────────────────────────────────
 # Logging
@@ -46,7 +47,7 @@ logging.getLogger("apscheduler").setLevel(logging.WARNING)
 _cycle_counter = 0
 
 
-async def _run_cycle(pool, settings: Settings, proxy_rotator: ProxyRotator) -> None:
+async def _run_cycle(pool, settings: Settings, proxy_rotator: ProxyRotator, waha: WahaClient | None = None) -> None:
     """One full scrape → dispatch cycle."""
     global _cycle_counter
     _cycle_counter += 1
@@ -54,15 +55,19 @@ async def _run_cycle(pool, settings: Settings, proxy_rotator: ProxyRotator) -> N
 
     # --- Scrape ---
     try:
-        new_leads = await run_scraper(pool, proxy_rotator)
+        new_leads = await run_scraper(pool, proxy_rotator, mode=settings.mode)
         logger.info("Scraper returned %d new leads", new_leads)
     except Exception as exc:
         logger.error("Scraper error: %s", exc, exc_info=True)
 
-    # --- Dispatch ---
+    # --- Dispatch (WAHA + optional n8n webhook) ---
     try:
         dispatched = await dispatch_leads(
-            pool, settings.n8n_webhook_url, settings.n8n_webhook_api_key
+            pool,
+            webhook_url=settings.n8n_webhook_url,
+            api_key=settings.n8n_webhook_api_key,
+            waha=waha,
+            message_delay=settings.message_delay,
         )
         logger.info("Dispatched %d leads", dispatched)
     except Exception as exc:
@@ -73,13 +78,16 @@ async def main() -> None:
     load_dotenv()
     settings = Settings.from_env()
 
-    logger.info("Starting Olinda Prospector")
+    logger.info("Starting Olinda Prospector (%s mode)", settings.mode.upper())
+    logger.info("  Mode     : %s", settings.mode.upper())
     logger.info("  Database   : %s", settings.database_url.split("@")[-1] if "@" in settings.database_url else "***")
     logger.info("  Webhook    : %s", settings.n8n_webhook_url[:40] + "..." if settings.n8n_webhook_url else "(not set)")
     logger.info("  API Key    : %s", "configured" if settings.n8n_webhook_api_key else "(not set)")
     logger.info("  Interval   : %d s", settings.scrape_interval)
     logger.info("  Dashboard  : http://0.0.0.0:%d", settings.dashboard_port)
     logger.info("  Proxies    : %d configured", len(settings.proxy_list))
+    logger.info("  WAHA       : %s", settings.waha_api_url if settings.waha_enabled else "(not configured)")
+    logger.info("  Msg delay  : %.1f s", settings.message_delay)
 
     # ── Database ──
     pool = await get_pool(settings.database_url)
@@ -88,13 +96,27 @@ async def main() -> None:
     # ── Proxy Rotator ──
     proxy_rotator = ProxyRotator(settings.proxy_list)
 
+    # ── WAHA Client ──
+    waha: WahaClient | None = None
+    if settings.waha_enabled:
+        waha = WahaClient(
+            api_url=settings.waha_api_url,
+            api_key=settings.waha_api_key,
+            session=settings.waha_session,
+        )
+        status = await waha.check_session()
+        if "error" in status:
+            logger.warning("WAHA session check failed: %s", status["error"])
+        else:
+            logger.info("WAHA session active: %s", status.get("status", status))
+
     # ── APScheduler ──
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         _run_cycle,
         "interval",
         seconds=settings.scrape_interval,
-        args=[pool, settings, proxy_rotator],
+        args=[pool, settings, proxy_rotator, waha],
         id="scrape_dispatch",
         name="Scrape & Dispatch",
         max_instances=1,
@@ -104,10 +126,10 @@ async def main() -> None:
     logger.info("Scheduler started — job runs every %d s", settings.scrape_interval)
 
     # Run first cycle immediately
-    asyncio.create_task(_run_cycle(pool, settings, proxy_rotator))
+    asyncio.create_task(_run_cycle(pool, settings, proxy_rotator, waha))
 
     # ── Dashboard Web Server ──
-    dashboard_app = create_dashboard_app(pool)
+    dashboard_app = create_dashboard_app(pool, mode=settings.mode)
     runner = web.AppRunner(dashboard_app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", settings.dashboard_port)

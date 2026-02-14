@@ -1,9 +1,10 @@
 """
-Lead Dispatcher — fetches pending leads from PostgreSQL and
-sends them as a JSON payload to the configured n8n Webhook URL.
-Updates lead status to 'Sent' on success.
+Lead Dispatcher — fetches pending leads from PostgreSQL and:
+  1. Sends a WhatsApp prospecting message via WAHA
+  2. Optionally POSTs the lead to an n8n webhook
+  3. Updates lead status to 'Sent'
 
-Supports API key authentication via X-API-Key header.
+Supports API key authentication for webhook calls.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ import aiohttp
 import asyncpg
 
 from db import fetch_pending_leads, mark_leads_sent
+from services.waha import WahaClient, get_pitch_for_lead
 
 logger = logging.getLogger(__name__)
 
@@ -83,40 +85,98 @@ async def _send_to_webhook(
     return False
 
 
+async def _send_whatsapp_messages(
+    waha: WahaClient,
+    leads: list[dict[str, Any]],
+    message_delay: float = 3.0,
+) -> list[int]:
+    """
+    Send WhatsApp prospecting messages to each lead.
+    Returns list of lead IDs that were successfully messaged.
+    """
+    success_ids: list[int] = []
+
+    async with aiohttp.ClientSession() as session:
+        for i, lead in enumerate(leads):
+            phone = lead["whatsapp"]
+            name = lead["business_name"]
+            target = lead.get("target_saas")
+
+            message = get_pitch_for_lead(name, target)
+
+            result = await waha.send_text(phone, message, session=session)
+
+            if "error" not in result:
+                success_ids.append(lead["id"])
+                logger.info(
+                    "✅ WhatsApp sent to %s (%s) [%d/%d]",
+                    name, phone, i + 1, len(leads),
+                )
+            else:
+                logger.warning(
+                    "❌ WhatsApp failed for %s (%s): %s",
+                    name, phone, result.get("error"),
+                )
+
+            # Rate-limit between messages
+            if i < len(leads) - 1:
+                await asyncio.sleep(message_delay)
+
+    return success_ids
+
+
 async def dispatch_leads(
     pool: asyncpg.Pool,
-    webhook_url: str,
+    webhook_url: str = "",
     api_key: str = "",
+    waha: WahaClient | None = None,
+    message_delay: float = 3.0,
 ) -> int:
     """
     Main dispatcher entry point.
-    Fetches pending leads in batches, POSTs them to the webhook, and marks them sent.
+    1. Fetch pending leads
+    2. Send WhatsApp messages via WAHA (if configured)
+    3. POST to n8n webhook (if configured)
+    4. Mark as 'Sent'
     Returns total number of leads dispatched.
     """
-    if not webhook_url:
-        logger.warning("N8N_WEBHOOK_URL not configured — skipping dispatch")
+    if not webhook_url and not waha:
+        logger.warning("Neither WAHA nor N8N_WEBHOOK_URL configured — skipping dispatch")
         return 0
 
     total_dispatched = 0
 
-    async with aiohttp.ClientSession() as session:
-        while True:
-            leads = await fetch_pending_leads(pool, limit=BATCH_SIZE)
-            if not leads:
-                break
+    while True:
+        leads = await fetch_pending_leads(pool, limit=BATCH_SIZE)
+        if not leads:
+            break
 
-            serialised = [_serialize_lead(l) for l in leads]
-            success = await _send_to_webhook(session, webhook_url, serialised, api_key)
+        sent_ids: list[int] = []
 
-            if success:
-                lead_ids = [l["id"] for l in leads]
-                await mark_leads_sent(pool, lead_ids)
-                total_dispatched += len(lead_ids)
-                logger.info("Dispatched batch of %d leads", len(lead_ids))
-            else:
-                # Stop dispatching on failure to avoid hammering the webhook
-                logger.error("Stopping dispatch due to webhook failure")
-                break
+        # ── WhatsApp messages via WAHA ──
+        if waha:
+            waha_ids = await _send_whatsapp_messages(waha, leads, message_delay)
+            sent_ids.extend(waha_ids)
+            logger.info("WAHA: %d/%d messages sent", len(waha_ids), len(leads))
+        else:
+            # If no WAHA, all leads are eligible for webhook dispatch
+            sent_ids = [l["id"] for l in leads]
 
-    logger.info("Dispatch cycle complete — %d leads sent", total_dispatched)
+        # ── n8n webhook ──
+        if webhook_url and sent_ids:
+            serialised = [_serialize_lead(l) for l in leads if l["id"] in sent_ids]
+            async with aiohttp.ClientSession() as session:
+                await _send_to_webhook(session, webhook_url, serialised, api_key)
+
+        # ── Mark sent ──
+        if sent_ids:
+            await mark_leads_sent(pool, sent_ids)
+            total_dispatched += len(sent_ids)
+            logger.info("Dispatched batch: %d leads", len(sent_ids))
+
+        # If WAHA is configured but fewer were sent than fetched, stop
+        if waha and len(sent_ids) < len(leads):
+            break
+
+    logger.info("Dispatch cycle complete — %d leads processed", total_dispatched)
     return total_dispatched

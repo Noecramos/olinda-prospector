@@ -1,0 +1,147 @@
+"""
+WAHA (WhatsApp HTTP API) client for sending messages to leads.
+Sends prospecting messages via WhatsApp using the existing WAHA instance.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from typing import Any
+
+import aiohttp
+
+logger = logging.getLogger(__name__)
+
+MAX_RETRIES = 3
+RETRY_BACKOFF = 2
+# Delay between messages to avoid rate-limiting (seconds)
+MESSAGE_DELAY = 3.0
+
+
+class WahaClient:
+    """Async WAHA client for sending WhatsApp messages."""
+
+    def __init__(self, api_url: str, api_key: str, session: str = "default") -> None:
+        self.api_url = api_url.rstrip("/")
+        self.api_key = api_key
+        self.session = session
+
+    def _headers(self) -> dict[str, str]:
+        h: dict[str, str] = {"Content-Type": "application/json"}
+        if self.api_key:
+            h["Authorization"] = f"Bearer {self.api_key}"
+        return h
+
+    def _format_chat_id(self, phone: str) -> str:
+        """Convert phone number to WAHA chat ID format: 5581999999999@c.us"""
+        digits = "".join(c for c in phone if c.isdigit())
+        return f"{digits}@c.us"
+
+    async def send_text(
+        self,
+        phone: str,
+        text: str,
+        session: aiohttp.ClientSession | None = None,
+    ) -> dict[str, Any]:
+        """Send a text message via WAHA. Returns the API response."""
+        chat_id = self._format_chat_id(phone)
+        endpoint = f"{self.api_url}/api/{self.session}/sendText"
+        payload = {"chatId": chat_id, "text": text}
+
+        own_session = session is None
+        if own_session:
+            session = aiohttp.ClientSession()
+
+        try:
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    async with session.post(
+                        endpoint,
+                        json=payload,
+                        headers=self._headers(),
+                        timeout=aiohttp.ClientTimeout(total=15),
+                    ) as resp:
+                        body = await resp.json()
+                        if resp.status < 300:
+                            logger.info("Message sent to %s (status %d)", phone, resp.status)
+                            return body
+                        else:
+                            logger.warning(
+                                "WAHA returned %d for %s (attempt %d): %s",
+                                resp.status, phone, attempt, body,
+                            )
+                except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                    logger.warning("WAHA request failed for %s (attempt %d): %s", phone, attempt, exc)
+
+                if attempt < MAX_RETRIES:
+                    await asyncio.sleep(RETRY_BACKOFF ** attempt)
+
+            logger.error("Failed to send message to %s after %d attempts", phone, MAX_RETRIES)
+            return {"error": f"Failed after {MAX_RETRIES} attempts"}
+        finally:
+            if own_session:
+                await session.close()
+
+    async def check_session(self) -> dict[str, Any]:
+        """Check if the WAHA session is active."""
+        endpoint = f"{self.api_url}/api/sessions/{self.session}"
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(endpoint, headers=self._headers(), timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    return await resp.json()
+            except Exception as exc:
+                return {"error": str(exc)}
+
+
+# ═══════════════════════════════════════════════════════════════
+# MESSAGE TEMPLATES
+# ═══════════════════════════════════════════════════════════════
+
+def build_zappy_pitch(business_name: str) -> str:
+    """Sales pitch for food businesses (Zappy)."""
+    return (
+        f"Olá, {business_name}! 👋\n\n"
+        "Somos do Zappy e encontrei seu negócio no Google Maps. "
+        "Parabéns pelo trabalho! 🎉\n\n"
+        "A Zappy é uma plataforma de gestão completa para restaurantes, "
+        "pizzarias, Lanchonetes e muito mais, que ajuda a:\n\n"
+        "📱 Receber pedidos por WhatsApp automaticamente\n"
+        "📊 Controlar estoque e vendas em tempo real\n"
+        "🛵 Gerenciar entregas com rastreamento\n"
+        "💰 Reduzir custos sem taxas diferente de outros apps de delivery\n\n"
+        "Você mantém 100% do lucro\n\n"
+        "Segue o link para dar uma olhada! 😊\n\n"
+        "https://zappy.noviapp.com.br/\n\n"
+        "Se tiver interesse faça seu cadastro sem compromisso aqui: "
+        "https://zappy.noviapp.com.br/register\n\n"
+        "Boas Vendas !!!!"
+    )
+
+
+def build_lojaky_pitch(business_name: str) -> str:
+    """Sales pitch for retail businesses (Lojaky)."""
+    return (
+        f"Olá, {business_name}! 👋\n\n"
+        "Somos do Lojaky e encontrei seu negócio no Google Maps. "
+        "Parabéns pelo trabalho! 🎉\n\n"
+        "O Lojaky é uma plataforma de vendas online completa para lojas, "
+        "boutiques, pet shops e muito mais, que ajuda a:\n\n"
+        "🛒 Vender pelo WhatsApp com catálogo digital\n"
+        "📦 Controlar estoque e vendas em tempo real\n"
+        "📈 Aumentar vendas com promoções automatizadas\n"
+        "💳 Receber pagamentos via PIX e cartão sem taxas!\n\n"
+        "Você mantém 100% do lucro\n\n"
+        "Segue o link para dar uma olhada! 😊\n\n"
+        "https://lojaky.noviapp.com.br/\n\n"
+        "Se tiver interesse faça seu cadastro sem compromisso aqui: "
+        "https://lojaky.noviapp.com.br/register\n\n"
+        "Boas Vendas !!!!"
+    )
+
+
+def get_pitch_for_lead(business_name: str, target_saas: str | None) -> str:
+    """Return the appropriate sales pitch based on target_saas."""
+    if target_saas == "Zappy":
+        return build_zappy_pitch(business_name)
+    return build_lojaky_pitch(business_name)
