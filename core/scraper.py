@@ -373,20 +373,23 @@ async def _scrape_category(
                 else:
                     neighborhood = parts[0]
 
-            # Extract the business's own phone number
-            # First try the phone button (most reliable — it's the business's listed number)
+            # Extract ONLY the business's own phone number (not reviews/ads)
+            # Strategy: use the phone button in the contact info section
             whatsapp_numbers: list[str] = []
             phone_el = await page.query_selector('button[data-item-id*="phone"] div.fontBodyMedium')
             if phone_el:
                 phone_text = await phone_el.inner_text()
-                whatsapp_numbers = _extract_whatsapp_numbers(phone_text)
+                whatsapp_numbers = _extract_whatsapp_numbers(phone_text)[:1]
 
-            # Fallback: scan the info section (not the whole page) — limit to 2 numbers
+            # Fallback: check for a phone link (tel:) in the action buttons
             if not whatsapp_numbers:
-                info_section = await page.query_selector('div[role="main"]')
-                if info_section:
-                    info_text = await info_section.inner_text()
-                    whatsapp_numbers = _extract_whatsapp_numbers(info_text)[:2]
+                phone_links = await page.query_selector_all('a[href^="tel:"]')
+                for pl in phone_links[:1]:
+                    href = await pl.get_attribute("href") or ""
+                    nums = _extract_whatsapp_numbers(href)
+                    if nums:
+                        whatsapp_numbers = nums[:1]
+                        break
 
             target = _classify_target_saas(mode)
 
