@@ -373,9 +373,20 @@ async def _scrape_category(
                 else:
                     neighborhood = parts[0]
 
-            # Grab all visible text to search for WhatsApp numbers
-            body_text = await page.inner_text("body")
-            whatsapp_numbers = _extract_whatsapp_numbers(body_text)
+            # Extract the business's own phone number
+            # First try the phone button (most reliable — it's the business's listed number)
+            whatsapp_numbers: list[str] = []
+            phone_el = await page.query_selector('button[data-item-id*="phone"] div.fontBodyMedium')
+            if phone_el:
+                phone_text = await phone_el.inner_text()
+                whatsapp_numbers = _extract_whatsapp_numbers(phone_text)
+
+            # Fallback: scan the info section (not the whole page) — limit to 2 numbers
+            if not whatsapp_numbers:
+                info_section = await page.query_selector('div[role="main"]')
+                if info_section:
+                    info_text = await info_section.inner_text()
+                    whatsapp_numbers = _extract_whatsapp_numbers(info_text)[:2]
 
             target = _classify_target_saas(mode)
 
