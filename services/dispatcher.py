@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import aiohttp
 import asyncpg
@@ -24,6 +26,27 @@ logger = logging.getLogger(__name__)
 MAX_RETRIES = 3
 RETRY_BACKOFF_BASE = 2  # seconds
 BATCH_SIZE = 50
+
+# Business hours (Brazil timezone)
+BUSINESS_HOURS_START = 9  # 9 AM
+BUSINESS_HOURS_END = 18   # 6 PM
+BUSINESS_DAYS = [0, 1, 2, 3, 4, 5]  # Monday to Saturday
+TIMEZONE = "America/Sao_Paulo"  # Brazil (GMT-3)
+
+
+def is_business_hours() -> bool:
+    """Check if current time is within business hours (9 AM - 6 PM, Mon-Sat, Brazil time)."""
+    now = datetime.now(ZoneInfo(TIMEZONE))
+    
+    # Check day of week (0=Monday, 6=Sunday)
+    if now.weekday() not in BUSINESS_DAYS:
+        return False
+    
+    # Check hour
+    if now.hour < BUSINESS_HOURS_START or now.hour >= BUSINESS_HOURS_END:
+        return False
+    
+    return True
 
 
 def _serialize_lead(lead: dict[str, Any]) -> dict[str, Any]:
@@ -142,6 +165,15 @@ async def dispatch_leads(
     """
     if not webhook_url and not waha:
         logger.warning("Neither WAHA nor N8N_WEBHOOK_URL configured — skipping dispatch")
+        return 0
+    
+    # Check business hours before dispatching
+    if not is_business_hours():
+        now = datetime.now(ZoneInfo(TIMEZONE))
+        logger.info(
+            "⏰ Outside business hours (%s, %s) — skipping dispatch",
+            now.strftime("%A"), now.strftime("%H:%M"),
+        )
         return 0
 
     total_dispatched = 0
