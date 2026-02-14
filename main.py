@@ -92,6 +92,13 @@ async def main() -> None:
     # ── Database ──
     pool = await get_pool(settings.database_url)
     await init_db(pool)
+    
+    # ── Auto-migrate schema ──
+    try:
+        from migrate import migrate
+        await migrate()
+    except Exception as e:
+        logger.warning("Migration failed (might already be applied): %s", e)
 
     # ── Proxy Rotator ──
     proxy_rotator = ProxyRotator(settings.proxy_list)
