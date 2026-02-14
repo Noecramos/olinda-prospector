@@ -158,11 +158,15 @@ tr:hover{background:rgba(124,92,252,.04)}
 
 <script>
 let allLeads = [];
+const MODE = '__MODE__';
+const TARGET_SAAS = MODE === 'zappy' ? 'Zappy' : 'Lojaky';
 
 async function loadData() {
   const status = document.getElementById('filterStatus').value;
   const category = document.getElementById('filterCategory').value;
   const params = new URLSearchParams();
+  params.set('target_saas', TARGET_SAAS);
+  params.set('has_whatsapp', '1');
   if (status) params.set('status', status);
   if (category) params.set('category', category);
 
@@ -172,7 +176,7 @@ async function loadData() {
   try {
     const [leadsRes, statsRes] = await Promise.all([
       fetch('/api/leads?' + params.toString()),
-      fetch('/api/stats')
+      fetch('/api/stats?' + new URLSearchParams({target_saas: TARGET_SAAS, has_whatsapp: '1'}).toString())
     ]);
     const leadsData = await leadsRes.json();
     const statsData = await statsRes.json();
@@ -278,6 +282,7 @@ def _build_dashboard_html(mode: str = "zappy") -> str:
     html = html.replace("__ACCENT__", accent)
     html = html.replace("__SECONDARY__", secondary)
     html = html.replace("__FOOTER__", footer_label)
+    html = html.replace("__MODE__", mode)
     return html
 
 
@@ -292,6 +297,7 @@ async def _handle_api_leads(request: web.Request) -> web.Response:
     status = request.query.get("status")
     category = request.query.get("category")
     target_saas = request.query.get("target_saas")
+    has_whatsapp = request.query.get("has_whatsapp")
 
     conditions: list[str] = []
     params: list[Any] = []
@@ -309,6 +315,8 @@ async def _handle_api_leads(request: web.Request) -> web.Response:
         conditions.append(f"target_saas = ${idx}")
         params.append(target_saas)
         idx += 1
+    if has_whatsapp:
+        conditions.append("whatsapp IS NOT NULL")
 
     where = " AND ".join(conditions)
     where_clause = f"WHERE {where}" if where else ""
@@ -343,12 +351,29 @@ async def _handle_api_leads(request: web.Request) -> web.Response:
 
 async def _handle_api_stats(request: web.Request) -> web.Response:
     pool: asyncpg.Pool = request.app["db_pool"]
+    target_saas = request.query.get("target_saas")
+    has_whatsapp = request.query.get("has_whatsapp")
+
+    # Build WHERE clause for stats too
+    conditions: list[str] = []
+    params: list[Any] = []
+    idx = 1
+    if target_saas:
+        conditions.append(f"target_saas = ${idx}")
+        params.append(target_saas)
+        idx += 1
+    if has_whatsapp:
+        conditions.append("whatsapp IS NOT NULL")
+
+    where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
+    where_and = (" AND " + " AND ".join(conditions)) if conditions else ""
 
     async with pool.acquire() as conn:
-        total = await conn.fetchval("SELECT COUNT(*) FROM leads_olinda")
-        pending = await conn.fetchval("SELECT COUNT(*) FROM leads_olinda WHERE status = 'Pending'")
-        sent = await conn.fetchval("SELECT COUNT(*) FROM leads_olinda WHERE status = 'Sent'")
-        categories = await conn.fetch("SELECT DISTINCT category FROM leads_olinda WHERE category IS NOT NULL ORDER BY category")
+        total = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda{where}", *params)
+        pending = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Pending'{where_and}", *params)
+        sent = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Sent'{where_and}", *params)
+        cat_query = f"SELECT DISTINCT category FROM leads_olinda WHERE category IS NOT NULL{where_and} ORDER BY category"
+        categories = await conn.fetch(cat_query, *params)
 
     return web.json_response({
         "total": total,
