@@ -90,7 +90,15 @@ h1 span{font-weight:300;opacity:.7}
 select,input[type="text"]{padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:.85rem;width:100%;outline:none;transition:border-color .2s}
 select:focus,input:focus{border-color:var(--accent)}
 
-.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow-x:auto}
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;user-select:none;transition:background .2s}
+.table-header:hover{background:rgba(147,51,234,.06)}
+.table-header h3{font-size:.9rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.table-header h3 span{font-weight:400;color:var(--text-muted);font-size:.8rem}
+.table-header .arrow{font-size:.7rem;color:var(--text-muted);transition:transform .3s ease}
+.table-wrap.collapsed .arrow{transform:rotate(-90deg)}
+.table-body{max-height:5000px;overflow:hidden;transition:max-height .4s ease-in-out}
+.table-wrap.collapsed .table-body{max-height:0}
 table{width:100%;border-collapse:collapse;table-layout:fixed}
 colgroup .col-id{width:60px}
 colgroup .col-name{width:22%}
@@ -364,7 +372,13 @@ tr:hover{background:rgba(124,92,252,.04)}
     </div>
   </div>
 
-  <div class="table-wrap">
+  <div class="table-wrap" id="tableWrap">
+    <div class="table-header" onclick="toggleTable()">
+      <h3>📋 Leads <span id="tableCount"></span></h3>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="table-body">
+    <div style="overflow-x:auto">
     <table>
       <colgroup>
         <col class="col-id"><col class="col-name"><col class="col-wa"><col class="col-bairro">
@@ -378,6 +392,8 @@ tr:hover{background:rgba(124,92,252,.04)}
       </thead>
       <tbody id="leadsBody"></tbody>
     </table>
+    </div>
+    </div>
   </div>
 
   <div class="footer">+Leads &copy; 2026</div>
@@ -797,6 +813,7 @@ function populateNeighborhoodFilter(neighborhoods) {
 }
 
 function renderTable(leads) {
+  document.getElementById('tableCount').textContent = '(' + leads.length.toLocaleString() + ')';
   const tbody = document.getElementById('leadsBody');
   if (!leads.length) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:48px">Nenhum lead encontrado</td></tr>';
@@ -900,6 +917,14 @@ function sortLeads(leads) {
 loadSettings();
 loadData();
 setInterval(loadData, 30000);
+
+function toggleTable() {
+  document.getElementById('tableWrap').classList.toggle('collapsed');
+}
+// Auto-collapse on mobile
+if (window.innerWidth < 768) {
+  document.getElementById('tableWrap').classList.add('collapsed');
+}
 </script>
 </body>
 </html>"""
