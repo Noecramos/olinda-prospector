@@ -91,6 +91,12 @@ tr:hover{background:rgba(124,92,252,.04)}
 .wa-link{color:var(--green);text-decoration:none;font-weight:500}
 .wa-link:hover{text-decoration:underline}
 
+/* Active list boxes */
+.active-list-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow-y:auto}
+.active-list-box::-webkit-scrollbar{width:4px}
+.active-list-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.info-tag{padding:3px 10px;background:var(--card);border:1px solid var(--border);border-radius:12px;font-size:.7rem;color:var(--text-muted)}
+
 /* Settings Panel */
 .settings-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px 32px;margin-bottom:28px;animation:fadeUp .3s ease-out both}
 .settings-panel h2{font-size:1rem;font-weight:600;margin-bottom:20px;color:var(--text);display:flex;align-items:center;gap:8px}
@@ -178,18 +184,6 @@ tr:hover{background:rgba(124,92,252,.04)}
 
     <hr class="divider">
 
-    <div class="settings-section">
-      <label class="section-label">📍 Cidades Ativas <span>(clique para ativar/desativar)</span></label>
-      <div class="city-chips" id="cityChips">
-        <div class="city-chip active" data-city="Olinda, PE" onclick="toggleCity(this)">📍 Olinda</div>
-        <div class="city-chip active" data-city="Camaragibe, PE" onclick="toggleCity(this)">📍 Camaragibe</div>
-        <div class="city-chip active" data-city="Várzea, Recife, PE" onclick="toggleCity(this)">📍 Várzea (Recife)</div>
-        <div class="city-chip active" data-city="São Lourenço da Mata, PE" onclick="toggleCity(this)">📍 São Lourenço da Mata</div>
-      </div>
-    </div>
-
-    <hr class="divider">
-
     <div class="settings-columns">
       <div class="settings-section">
         <label class="section-label">🏘️ Bairros Extras <span>(adicionados a todas as cidades ativas)</span></label>
@@ -211,7 +205,37 @@ tr:hover{background:rgba(124,92,252,.04)}
 
     <hr class="divider">
 
-    <button class="btn-save" onclick="saveSettings()">💾 Salvar Configurações</button>
+    <div class="settings-columns">
+      <div class="settings-section">
+        <label class="section-label">📍 Cidades Ativas <span>(clique para ativar/desativar)</span></label>
+        <div class="city-chips" id="cityChips" style="margin-bottom:10px">
+          <div class="city-chip active" data-city="Olinda, PE" onclick="toggleCity(this)">📍 Olinda</div>
+          <div class="city-chip active" data-city="Camaragibe, PE" onclick="toggleCity(this)">📍 Camaragibe</div>
+          <div class="city-chip active" data-city="Várzea, Recife, PE" onclick="toggleCity(this)">📍 Várzea (Recife)</div>
+          <div class="city-chip active" data-city="São Lourenço da Mata, PE" onclick="toggleCity(this)">📍 São Lourenço da Mata</div>
+        </div>
+        <div class="add-row">
+          <input type="text" id="newCity" placeholder="Ex: Jaboatão, PE..." onkeydown="if(event.key==='Enter'){addCity()}">
+          <button class="btn" onclick="addCity()" style="padding:8px 16px;white-space:nowrap">+ Adicionar</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <label class="section-label">🏷️ Categorias Ativas <span>(<span id="catInfoCount">—</span> categorias)</span></label>
+        <div class="active-list-box" id="catInfo"></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="settings-columns">
+      <div>
+        <button class="btn-save" onclick="saveSettings()">💾 Salvar Configurações</button>
+      </div>
+      <div class="settings-section">
+        <label class="section-label">🏘️ Bairros Ativos <span>(<span id="bairroInfoCount">—</span> bairros)</span></label>
+        <div class="active-list-box" id="bairroInfo"></div>
+      </div>
+    </div>
   </div>
 
   <div class="stats" id="statsRow">
@@ -303,6 +327,31 @@ function toggleWhatsApp() {
 
 function toggleCity(el) {
   el.classList.toggle('active');
+  loadScraperInfo();
+}
+
+function addCity() {
+  const input = document.getElementById('newCity');
+  const val = input.value.trim();
+  if (!val) return;
+  const container = document.getElementById('cityChips');
+  const existing = container.querySelectorAll('.city-chip');
+  for (let i = 0; i < existing.length; i++) {
+    if (existing[i].dataset.city.toLowerCase() === val.toLowerCase()) { input.value = ''; return; }
+  }
+  const chip = document.createElement('div');
+  chip.className = 'city-chip active';
+  chip.dataset.city = val;
+  chip.onclick = function() { toggleCity(chip); };
+  chip.innerHTML = '📍 ' + escHtml(val) + ' <span onclick="event.stopPropagation();removeCity(this.parentElement)" style="cursor:pointer;margin-left:4px;color:var(--red)">&times;</span>';
+  container.appendChild(chip);
+  input.value = '';
+  loadScraperInfo();
+}
+
+function removeCity(el) {
+  el.remove();
+  loadScraperInfo();
 }
 
 let customCategories = [];
@@ -316,11 +365,13 @@ function addCategory() {
   customCategories.push(val);
   input.value = '';
   renderCategoryChips();
+  loadScraperInfo();
 }
 
 function removeCategory(idx) {
   customCategories.splice(idx, 1);
   renderCategoryChips();
+  loadScraperInfo();
 }
 
 function renderCategoryChips() {
@@ -338,11 +389,13 @@ function addNeighborhood() {
   customNeighborhoods.push(val);
   input.value = '';
   renderNeighborhoodChips();
+  loadScraperInfo();
 }
 
 function removeNeighborhood(idx) {
   customNeighborhoods.splice(idx, 1);
   renderNeighborhoodChips();
+  loadScraperInfo();
 }
 
 function renderNeighborhoodChips() {
@@ -370,8 +423,42 @@ async function loadSettings() {
     customNeighborhoods = data.custom_neighborhoods || [];
     renderCategoryChips();
     renderNeighborhoodChips();
+    loadScraperInfo();
   } catch (e) { console.error('Erro ao carregar config:', e); }
 }
+
+async function loadScraperInfo() {
+  try {
+    const mode = document.getElementById('scraperMode').value;
+    const res = await fetch('/api/scraper-info?mode=' + mode);
+    const data = await res.json();
+    const catBox = document.getElementById('catInfo');
+    const bairroBox = document.getElementById('bairroInfo');
+    const cats = data.categories || [];
+    const neighs = data.neighborhoods || [];
+
+    // Merge local custom items that haven't been saved yet
+    customCategories.forEach(function(c) {
+      if (cats.indexOf(c) === -1) cats.push(c);
+    });
+    customNeighborhoods.forEach(function(n) {
+      if (neighs.indexOf(n) === -1) neighs.push(n);
+    });
+
+    document.getElementById('catInfoCount').textContent = cats.length;
+    document.getElementById('bairroInfoCount').textContent = neighs.length;
+    catBox.innerHTML = cats.map(function(c) {
+      return '<span class="info-tag">' + escHtml(c) + '</span>';
+    }).join('');
+    bairroBox.innerHTML = neighs.map(function(n) {
+      return '<span class="info-tag">' + escHtml(n) + '</span>';
+    }).join('');
+  } catch(e) { console.error('Erro ao carregar info:', e); }
+}
+
+document.getElementById('scraperMode').addEventListener('change', function() {
+  loadScraperInfo();
+});
 
 async function saveSettings() {
   const mode = document.getElementById('scraperMode').value;
@@ -392,6 +479,7 @@ async function saveSettings() {
     const status = document.getElementById('settingsStatus');
     status.classList.add('show');
     setTimeout(function() { status.classList.remove('show'); }, 2500);
+    loadScraperInfo();
   } catch (e) { alert('Erro ao salvar: ' + e.message); }
 }
 
@@ -748,6 +836,54 @@ async def _load_settings_from_db(app: web.Application) -> None:
         logger.warning("Could not load settings from DB (table may not exist yet): %s", exc)
 
 
+async def _handle_scraper_info(request: web.Request) -> web.Response:
+    """Return the active categories and bairros for the current (or queried) mode."""
+    from core.scraper import ZAPPY_CATEGORIES, LOJAKY_CATEGORIES, CITY_LOCATIONS
+
+    rs = request.app.get("runtime_settings", {})
+
+    # Allow ?mode= query param override for live switching in dashboard
+    mode = request.query.get("mode", rs.get("mode", "zappy")).lower()
+    categories = list(ZAPPY_CATEGORIES if mode == "zappy" else LOJAKY_CATEGORIES)
+
+    # Add custom categories
+    custom_cats = rs.get("custom_categories", [])
+    for cc in custom_cats:
+        if cc.strip() and cc.strip() not in categories:
+            categories.append(cc.strip())
+
+    # Build neighborhoods list
+    scrape_cities_setting = rs.get("scrape_cities", [])
+    cities_to_use = CITY_LOCATIONS
+    if scrape_cities_setting:
+        cities_to_use = {
+            city: neighborhoods
+            for city, neighborhoods in CITY_LOCATIONS.items()
+            if any(sc.lower() in city.lower() for sc in scrape_cities_setting)
+        }
+        if not cities_to_use:
+            cities_to_use = CITY_LOCATIONS
+
+    all_neighborhoods = []
+    for city, neighborhoods in cities_to_use.items():
+        for n in neighborhoods:
+            label = f"{n} ({city.split(',')[0]})"
+            if label not in all_neighborhoods:
+                all_neighborhoods.append(label)
+
+    # Add custom neighborhoods
+    custom_neighs = rs.get("custom_neighborhoods", [])
+    for cn in custom_neighs:
+        if cn.strip() and cn.strip() not in all_neighborhoods:
+            all_neighborhoods.append(cn.strip())
+
+    return web.json_response({
+        "mode": mode,
+        "categories": categories,
+        "neighborhoods": all_neighborhoods,
+    })
+
+
 def create_dashboard_app(pool: asyncpg.Pool, runtime_settings: dict | None = None, **kwargs) -> web.Application:
     """Create and return the dashboard aiohttp Application."""
     import os
@@ -762,6 +898,7 @@ def create_dashboard_app(pool: asyncpg.Pool, runtime_settings: dict | None = Non
     app.router.add_delete("/api/leads/clear", _handle_clear_leads)
     app.router.add_get("/api/settings", _handle_get_settings)
     app.router.add_post("/api/settings", _handle_post_settings)
+    app.router.add_get("/api/scraper-info", _handle_scraper_info)
 
     # Load persisted settings from DB on startup
     app.on_startup.append(_load_settings_from_db)
@@ -772,5 +909,3 @@ def create_dashboard_app(pool: asyncpg.Pool, runtime_settings: dict | None = Non
         app.router.add_static("/static/", static_dir, name="static")
 
     return app
-
-
