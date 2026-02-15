@@ -49,6 +49,10 @@ h1 span{font-weight:300;opacity:.7}
 .btn:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow)}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
 .btn-primary:hover{opacity:.85}
+.btn-toggle{border-color:var(--border);color:var(--text-muted);user-select:none}
+.btn-toggle.active{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.1);box-shadow:0 0 12px rgba(34,197,94,.2)}
+.btn-toggle .dot{width:8px;height:8px;border-radius:50%;background:var(--text-muted);transition:all .2s}
+.btn-toggle.active .dot{background:var(--green)}
 
 /* Stats */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px}
@@ -139,6 +143,12 @@ tr:hover{background:rgba(124,92,252,.04)}
       <label>Search</label>
       <input type="text" id="filterSearch" placeholder="Business name..." oninput="filterTable()">
     </div>
+    <div class="filter-group">
+      <label>&nbsp;</label>
+      <button class="btn btn-toggle active" id="toggleWhatsApp" onclick="toggleWhatsApp()">
+        <span class="dot"></span> Only WhatsApp
+      </button>
+    </div>
   </div>
 
   <div class="table-wrap">
@@ -160,13 +170,21 @@ tr:hover{background:rgba(124,92,252,.04)}
 let allLeads = [];
 const MODE = '__MODE__';
 const TARGET_SAAS = MODE === 'zappy' ? 'Zappy' : 'Lojaky';
+let whatsAppOnly = true;
+
+function toggleWhatsApp() {
+  whatsAppOnly = !whatsAppOnly;
+  const btn = document.getElementById('toggleWhatsApp');
+  btn.classList.toggle('active', whatsAppOnly);
+  loadData();
+}
 
 async function loadData() {
   const status = document.getElementById('filterStatus').value;
   const category = document.getElementById('filterCategory').value;
   const params = new URLSearchParams();
   params.set('target_saas', TARGET_SAAS);
-  params.set('has_whatsapp', '1');
+  if (whatsAppOnly) params.set('has_whatsapp', '1');
   if (status) params.set('status', status);
   if (category) params.set('category', category);
 
@@ -176,7 +194,7 @@ async function loadData() {
   try {
     const [leadsRes, statsRes] = await Promise.all([
       fetch('/api/leads?' + params.toString()),
-      fetch('/api/stats?' + new URLSearchParams({target_saas: TARGET_SAAS, has_whatsapp: '1'}).toString())
+      fetch('/api/stats?' + new URLSearchParams(Object.assign({target_saas: TARGET_SAAS}, whatsAppOnly ? {has_whatsapp: '1'} : {})).toString())
     ]);
     const leadsData = await leadsRes.json();
     const statsData = await statsRes.json();
