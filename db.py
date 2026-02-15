@@ -87,7 +87,7 @@ async def fetch_pending_leads(pool: asyncpg.Pool, limit: int = 50) -> list[dict[
     query = """
         SELECT id, business_name, whatsapp, neighborhood, category, google_rating, target_saas, created_at
         FROM leads_olinda
-        WHERE status = 'Pending'
+        WHERE status = 'Pending' AND whatsapp IS NOT NULL
         ORDER BY created_at ASC
         LIMIT $1;
     """

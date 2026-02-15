@@ -85,7 +85,7 @@ class WahaClient:
 
     async def check_session(self) -> dict[str, Any]:
         """Check if the WAHA session is active."""
-        endpoint = f"{self.api_url}/api/sessions/{self.session}"
+        endpoint = f"{self.api_url}/api/sessions"
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(endpoint, headers=self._headers(), timeout=aiohttp.ClientTimeout(total=10)) as resp:
