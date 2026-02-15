@@ -139,10 +139,13 @@ async def main() -> None:
             session=settings.waha_session,
         )
         status = await waha.check_session()
-        if "error" in status:
+        if isinstance(status, dict) and "error" in status:
             logger.warning("WAHA session check failed: %s", status["error"])
+        elif isinstance(status, list) and status:
+            s = status[0]
+            logger.info("WAHA session active: %s (%s)", s.get("status", "?"), s.get("name", "?"))
         else:
-            logger.info("WAHA session active: %s", status.get("status", status))
+            logger.info("WAHA session response: %s", status)
 
     # ── APScheduler ──
     scheduler = AsyncIOScheduler()
