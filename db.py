@@ -75,7 +75,13 @@ async def init_db(pool: asyncpg.Pool) -> None:
             await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_leads_sent_at ON leads_olinda (sent_at);
             """)
-            logger.info("Ensured sent_at column exists")
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_leads_whatsapp ON leads_olinda (whatsapp);
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_leads_status ON leads_olinda (status);
+            """)
+            logger.info("Ensured sent_at column and indexes exist")
     except Exception as exc:
         logger.warning("sent_at migration error: %s", exc)
 
@@ -111,11 +117,17 @@ async def upsert_lead(
 
 
 async def fetch_pending_leads(pool: asyncpg.Pool, limit: int = 50) -> list[dict[str, Any]]:
-    """Fetch up to `limit` leads with status 'Pending'."""
+    """Fetch up to `limit` leads with status 'Pending', excluding phones already messaged."""
     query = """
         SELECT id, business_name, whatsapp, neighborhood, category, google_rating, target_saas, created_at
-        FROM leads_olinda
+        FROM leads_olinda l
         WHERE status = 'Pending' AND whatsapp IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM leads_olinda dup
+              WHERE dup.whatsapp = l.whatsapp
+                AND dup.id != l.id
+                AND dup.status IN ('Sent', 'Quente', 'Frio', 'Convertido')
+          )
         ORDER BY created_at ASC
         LIMIT $1;
     """

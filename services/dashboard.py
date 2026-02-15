@@ -59,7 +59,7 @@ h1 span{font-weight:300;opacity:.7}
 .btn-toggle.active .dot{background:var(--green)}
 
 /* Stats */
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:28px}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:28px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 24px;position:relative;overflow:hidden}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
 .stat-card.total::before{background:linear-gradient(90deg,var(--accent),var(--cyan))}
@@ -67,8 +67,21 @@ h1 span{font-weight:300;opacity:.7}
 .stat-card.sent::before{background:var(--green)}
 .stat-card.hot::before{background:var(--amber)}
 .stat-card.cold::before{background:rgba(148,163,184,.6)}
+.stat-card.converted::before{background:linear-gradient(90deg,#22c55e,#06b6d4)}
 .stat-label{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px}
 .stat-value{font-size:2rem;font-weight:700;line-height:1}
+
+/* Conversion Funnel */
+.funnel-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:28px}
+.funnel-title{font-size:.9rem;font-weight:600;margin-bottom:16px;color:var(--text)}
+.funnel-steps{display:flex;align-items:center;gap:0}
+.funnel-step{flex:1;text-align:center;position:relative}
+.funnel-bar{height:40px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;position:relative;transition:all .4s ease}
+.funnel-step:first-child .funnel-bar{border-radius:8px 0 0 8px}
+.funnel-step:last-child .funnel-bar{border-radius:0 8px 8px 0}
+.funnel-label{font-size:.7rem;color:var(--text-muted);margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+.funnel-pct{font-size:.65rem;color:var(--text-muted);margin-top:2px}
+.funnel-arrow{color:var(--text-muted);font-size:1.2rem;margin:0 -4px;z-index:1}
 
 /* Filters */
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:20px;align-items:end}
@@ -98,6 +111,7 @@ tr:hover{background:rgba(124,92,252,.04)}
 .badge-sent{background:rgba(59,130,246,.15);color:#60a5fa}
 .badge-quente{background:rgba(249,115,22,.2);color:#fb923c}
 .badge-frio{background:rgba(148,163,184,.15);color:#94a3b8}
+.badge-convertido{background:rgba(34,197,94,.2);color:#22c55e}
 .wa-link{color:var(--green);text-decoration:none;font-weight:500}
 .wa-link:hover{text-decoration:underline}
 
@@ -157,6 +171,7 @@ tr:hover{background:rgba(124,92,252,.04)}
 /* Responsive */
 @media(max-width:1024px){
   .stats{grid-template-columns:repeat(3,1fr)}
+  .funnel-steps{flex-wrap:wrap}
   .filters{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:768px){
@@ -292,6 +307,17 @@ tr:hover{background:rgba(124,92,252,.04)}
     <div class="stat-card sent"><div class="stat-label">Enviados</div><div class="stat-value" id="statSent">&mdash;</div></div>
     <div class="stat-card hot"><div class="stat-label">🔥 Quentes</div><div class="stat-value" id="statHot">&mdash;</div></div>
     <div class="stat-card cold"><div class="stat-label">🧊 Frios</div><div class="stat-value" id="statCold">&mdash;</div></div>
+    <div class="stat-card converted"><div class="stat-label">✅ Convertidos</div><div class="stat-value" id="statConverted">&mdash;</div></div>
+  </div>
+
+  <div class="funnel-section">
+    <div class="funnel-title">📈 Funil de Conversão</div>
+    <div class="funnel-steps" id="funnelSteps">
+      <div class="funnel-step"><div class="funnel-bar" id="funnelTotal" style="background:var(--accent)">—</div><div class="funnel-label">Total</div><div class="funnel-pct" id="funnelTotalPct">100%</div></div>
+      <div class="funnel-step"><div class="funnel-bar" id="funnelSent" style="background:#3b82f6">—</div><div class="funnel-label">Enviados</div><div class="funnel-pct" id="funnelSentPct">—</div></div>
+      <div class="funnel-step"><div class="funnel-bar" id="funnelHot" style="background:#fb923c">—</div><div class="funnel-label">🔥 Quentes</div><div class="funnel-pct" id="funnelHotPct">—</div></div>
+      <div class="funnel-step"><div class="funnel-bar" id="funnelConverted" style="background:#22c55e">—</div><div class="funnel-label">✅ Convertidos</div><div class="funnel-pct" id="funnelConvertedPct">—</div></div>
+    </div>
   </div>
 
   <div class="filters">
@@ -311,6 +337,7 @@ tr:hover{background:rgba(124,92,252,.04)}
         <option value="Sent">Enviado</option>
         <option value="Quente">🔥 Quente</option>
         <option value="Frio">🧊 Frio</option>
+        <option value="Convertido">✅ Convertido</option>
       </select>
     </div>
     <div class="filter-group">
@@ -692,7 +719,7 @@ async function loadData(manual) {
     const leadsData = await leadsRes.json();
     const statsData = await statsRes.json();
 
-    allLeads = leadsData.leads || [];
+    allLeads = sortLeads(leadsData.leads || []);
     renderStats(statsData);
     renderTable(allLeads);
     populateCategoryFilter(statsData.categories || []);
@@ -710,6 +737,39 @@ function renderStats(s) {
   document.getElementById('statSent').textContent = (s.sent || 0).toLocaleString();
   document.getElementById('statHot').textContent = (s.quente || 0).toLocaleString();
   document.getElementById('statCold').textContent = (s.frio || 0).toLocaleString();
+  document.getElementById('statConverted').textContent = (s.convertido || 0).toLocaleString();
+  renderFunnel(s);
+
+  // Detect new Quentes
+  var newHot = s.quente || 0;
+  if (_prevHotCount !== null && newHot > _prevHotCount) {
+    var diff = newHot - _prevHotCount;
+    showToast('\ud83d\udd25 ' + diff + ' novo(s) lead(s) Quente(s)! Algu\u00e9m respondeu!', 'success');
+    playNotificationSound();
+  }
+  _prevHotCount = newHot;
+}
+
+function renderFunnel(s) {
+  var total = s.total || 0;
+  var enviados = (s.sent || 0) + (s.quente || 0) + (s.frio || 0) + (s.convertido || 0);
+  var quentes = (s.quente || 0) + (s.convertido || 0);
+  var convertidos = s.convertido || 0;
+
+  var bars = [
+    {el: 'funnelTotal', pctEl: 'funnelTotalPct', val: total, pct: 100},
+    {el: 'funnelSent', pctEl: 'funnelSentPct', val: enviados, pct: total ? Math.round(enviados/total*100) : 0},
+    {el: 'funnelHot', pctEl: 'funnelHotPct', val: quentes, pct: total ? Math.round(quentes/total*100) : 0},
+    {el: 'funnelConverted', pctEl: 'funnelConvertedPct', val: convertidos, pct: total ? Math.round(convertidos/total*100) : 0}
+  ];
+
+  bars.forEach(function(b) {
+    document.getElementById(b.el).textContent = b.val.toLocaleString();
+    document.getElementById(b.pctEl).textContent = b.pct + '%';
+    // Scale bar width proportionally (min 15% for visibility)
+    var width = Math.max(15, b.pct);
+    document.getElementById(b.el).style.width = width + '%';
+  });
 }
 
 function populateCategoryFilter(categories) {
@@ -743,8 +803,8 @@ function renderTable(leads) {
     return;
   }
   tbody.innerHTML = leads.map(function(l) {
-    var statusMap = {'Pending':'badge-pending','Sent':'badge-sent','Quente':'badge-quente','Frio':'badge-frio'};
-    var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'🔥 Quente','Frio':'🧊 Frio'};
+    var statusMap = {'Pending':'badge-pending','Sent':'badge-sent','Quente':'badge-quente','Frio':'badge-frio','Convertido':'badge-convertido'};
+    var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'\ud83d\udd25 Quente','Frio':'\ud83e\uddca Frio','Convertido':'\u2705 Convertido'};
     var statusClass = statusMap[l.status] || 'badge-pending';
     var statusLabel = labelMap[l.status] || l.status;
     var waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
@@ -804,6 +864,37 @@ function showToast(message, type) {
     toast.classList.remove('show');
     setTimeout(function() { toast.remove(); }, 400);
   }, 3000);
+}
+
+function playNotificationSound() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+    osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
+}
+
+var _prevHotCount = null;
+
+// Sort leads: Quente first, then Enviado, Pendente, Frio, Convertido last
+function sortLeads(leads) {
+  var order = {'Quente':0, 'Sent':1, 'Pending':2, 'Frio':3, 'Convertido':4};
+  return leads.slice().sort(function(a,b) {
+    var oa = order[a.status] !== undefined ? order[a.status] : 5;
+    var ob = order[b.status] !== undefined ? order[b.status] : 5;
+    if (oa !== ob) return oa - ob;
+    return (b.id || 0) - (a.id || 0);
+  });
 }
 
 loadSettings();
@@ -915,6 +1006,7 @@ async def _handle_api_stats(request: web.Request) -> web.Response:
         sent = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Sent'{where_and}", *params)
         quente = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Quente'{where_and}", *params)
         frio = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Frio'{where_and}", *params)
+        convertido = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Convertido'{where_and}", *params)
         cat_query = f"SELECT DISTINCT category FROM leads_olinda WHERE category IS NOT NULL{where_and} ORDER BY category"
         categories = await conn.fetch(cat_query, *params)
         neigh_query = f"SELECT DISTINCT neighborhood FROM leads_olinda WHERE neighborhood IS NOT NULL{where_and} ORDER BY neighborhood"
@@ -926,6 +1018,7 @@ async def _handle_api_stats(request: web.Request) -> web.Response:
         "sent": sent,
         "quente": quente,
         "frio": frio,
+        "convertido": convertido,
         "categories": [r["category"] for r in categories],
         "neighborhoods": [r["neighborhood"] for r in neighborhoods],
     })
