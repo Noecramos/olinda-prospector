@@ -16,7 +16,7 @@ WAHA_API_KEY = "a7b3c9d2e5f8g1h4j6k8m0n3p5q7r9s2"
 WAHA_SESSION = "default"
 
 sys.path.insert(0, ".")
-from services.waha import WahaClient, build_zappy_pitch
+from services.waha import WahaClient, build_lojaky_pitch
 
 
 async def main():
@@ -43,7 +43,7 @@ async def main():
     logger.info(f"Session status: {status}")
 
     # Build test message
-    message = build_zappy_pitch("Test Business")
+    message = build_lojaky_pitch("Test Business")
 
     logger.info(f"\nMessage preview:\n{message}\n")
 
