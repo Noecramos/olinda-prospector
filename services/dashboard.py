@@ -891,9 +891,8 @@ async def _handle_export_csv(request: web.Request) -> web.Response:
     filename = f"olinda_leads_{timestamp}.csv"
 
     return web.Response(
-        body=csv_content.encode("utf-8-sig"),
+        body=csv_content,
         content_type="text/csv",
-        charset="utf-8-sig",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

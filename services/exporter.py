@@ -22,11 +22,10 @@ async def export_leads_csv(
     category: str | None = None,
     target_saas: str | None = None,
     limit: int = 10_000,
-) -> str:
+) -> bytes:
     """
-    Export leads to CSV string with optional filters.
-    Uses semicolon delimiter for Brazilian Excel compatibility.
-    Returns the CSV content as a string with UTF-8 BOM.
+    Export leads to CSV bytes with optional filters.
+    Uses semicolon delimiter and cp1252 encoding for Brazilian Excel.
     """
     conditions: list[str] = []
     params: list[Any] = []
@@ -50,7 +49,7 @@ async def export_leads_csv(
 
     query = f"""
         SELECT id, business_name, whatsapp, neighborhood, category,
-               google_rating, status, target_saas, created_at
+               status, target_saas, created_at
         FROM leads_olinda
         {where_clause}
         ORDER BY created_at DESC
@@ -62,15 +61,13 @@ async def export_leads_csv(
         rows = await conn.fetch(query, *params)
 
     output = io.StringIO()
-    # Write sep= hint so Excel auto-detects semicolons
-    output.write("sep=;\n")
     # Use semicolon delimiter — Brazilian Excel default
     writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_ALL)
 
     # Header in Portuguese
     writer.writerow([
-        "ID", "Nome do Negócio", "WhatsApp", "Bairro",
-        "Categoria", "Avaliação Google", "Status", "Produto", "Data",
+        "ID", "Nome do Negocio", "WhatsApp", "Bairro",
+        "Categoria", "Status", "Produto", "Data",
     ])
 
     for row in rows:
@@ -78,10 +75,6 @@ async def export_leads_csv(
         created = ""
         if row["created_at"]:
             created = row["created_at"].strftime("%d/%m/%Y %H:%M")
-
-        # Format rating
-        rating = row["google_rating"]
-        rating_str = f"{rating:.1f}" if rating else ""
 
         # Status in PT-BR
         status_val = row["status"]
@@ -95,19 +88,22 @@ async def export_leads_csv(
         if wa:
             wa = f"+{wa[:2]} ({wa[2:4]}) {wa[4:9]}-{wa[9:]}" if len(wa) >= 11 else wa
 
+        # Clean text for cp1252 compat
+        def safe(val: str) -> str:
+            return val.encode("cp1252", errors="replace").decode("cp1252")
+
         writer.writerow([
             row["id"],
-            row["business_name"],
+            safe(row["business_name"]),
             wa,
-            row["neighborhood"] or "",
-            row["category"] or "",
-            rating_str,
+            safe(row["neighborhood"] or ""),
+            safe(row["category"] or ""),
             status_val,
             row["target_saas"] or "",
             created,
         ])
 
-    csv_content = output.getvalue()
+    csv_str = output.getvalue()
     logger.info("Exported %d leads to CSV", len(rows))
-    return csv_content
+    return csv_str.encode("cp1252", errors="replace")
 
