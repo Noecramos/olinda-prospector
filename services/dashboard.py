@@ -138,9 +138,11 @@ tr:hover{background:rgba(124,92,252,.04)}
 
 /* Settings Panel */
 .settings-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:28px;animation:fadeUp .3s ease-out both}
-.settings-toggle{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;cursor:pointer;user-select:none;transition:background .2s}
+.settings-toggle{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;cursor:pointer;user-select:none;transition:background .2s;flex-wrap:wrap;gap:10px}
 .settings-toggle:hover{background:rgba(147,51,234,.06)}
 .settings-toggle h2{font-size:1rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;margin:0}
+.settings-info{font-size:.6rem;color:var(--text-muted);font-weight:400;letter-spacing:.3px}
+.settings-controls{display:flex;align-items:center;gap:8px}
 .settings-toggle .arrow{font-size:.7rem;color:var(--text-muted);transition:transform .3s ease}
 .settings-panel.collapsed .arrow{transform:rotate(-90deg)}
 .settings-body{max-height:2000px;overflow:hidden;transition:max-height .4s ease-in-out;padding:0 32px 28px}
@@ -195,6 +197,9 @@ tr:hover{background:rgba(124,92,252,.04)}
   .stat-card{padding:14px 16px}
   .stat-value{font-size:1.5rem}
   .settings-panel{padding:18px 16px}
+  .settings-toggle{padding:14px 16px}
+  .settings-toggle h2{font-size:.85rem}
+  .settings-controls{gap:6px}
   .settings-columns{grid-template-columns:1fr}
   .filters{grid-template-columns:1fr 1fr}
   td,th{padding:8px 10px;font-size:.75rem}
@@ -239,8 +244,11 @@ tr:hover{background:rgba(124,92,252,.04)}
 
   <div class="settings-panel collapsed" id="settingsPanel">
     <div class="settings-toggle" onclick="document.getElementById('settingsPanel').classList.toggle('collapsed')">
-      <h2>⚙️ Configurações <span id="settingsStatus" class="settings-status">✓ Salvo!</span></h2>
-      <div style="display:flex;align-items:center;gap:10px" onclick="event.stopPropagation()">
+      <div>
+        <h2>⚙️ Configurações <span id="settingsStatus" class="settings-status">✓ Salvo!</span></h2>
+        <div class="settings-info">🛡️ max 8 msgs/hora · a cada 45 seg. · 9h–18h</div>
+      </div>
+      <div class="settings-controls" onclick="event.stopPropagation()">
         <select id="scraperMode" onchange="saveSettings()" style="padding:6px 12px;font-size:.78rem;border-radius:6px;background:var(--surface);color:var(--text);border:1px solid var(--border);cursor:pointer">
           <option value="zappy">🍔 Zappy</option>
           <option value="lojaky">🛒 Lojaky</option>
