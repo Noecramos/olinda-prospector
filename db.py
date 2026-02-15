@@ -54,11 +54,12 @@ async def init_db(pool: asyncpg.Pool) -> None:
     # One-time cleanup: fix CEPs stored as neighborhood names
     try:
         async with pool.acquire() as conn:
-            result = await conn.execute("""
+            result = await conn.execute(r"""
                 UPDATE leads_olinda
                 SET neighborhood = NULL
-                WHERE neighborhood ~ '^\\d{2}\\.?\\d{3}-?\\d{3}$'
-                   OR neighborhood ~ '^\\d{5,}$'
+                WHERE neighborhood ~ '^\d{2}\.?\d{3}-?\d{3}$'
+                   OR neighborhood ~ '^\d{5}'
+                   OR neighborhood ~ '^\d+\s*-\s*\d'
             """)
             count = int(result.split()[-1]) if result else 0
             if count > 0:
