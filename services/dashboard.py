@@ -18,6 +18,7 @@ import asyncpg
 from aiohttp import web
 
 from services.exporter import export_leads_csv
+from db import mark_lead_hot_by_phone
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +59,14 @@ h1 span{font-weight:300;opacity:.7}
 .btn-toggle.active .dot{background:var(--green)}
 
 /* Stats */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:28px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 24px;position:relative;overflow:hidden}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
 .stat-card.total::before{background:linear-gradient(90deg,var(--accent),var(--cyan))}
 .stat-card.pending::before{background:var(--amber)}
 .stat-card.sent::before{background:var(--green)}
-.stat-card.categories::before{background:var(--red)}
+.stat-card.hot::before{background:var(--amber)}
+.stat-card.cold::before{background:rgba(148,163,184,.6)}
 .stat-label{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px}
 .stat-value{font-size:2rem;font-weight:700;line-height:1}
 
@@ -86,8 +88,9 @@ tr:last-child td{border-bottom:none}
 tr:hover{background:rgba(124,92,252,.04)}
 .badge{padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:600;letter-spacing:.5px}
 .badge-pending{background:#f59e0b22;color:var(--amber)}
-.badge-sent{background:#22c55e22;color:var(--green)}
-.rating{color:var(--amber)}
+.badge-sent{background:rgba(59,130,246,.15);color:#60a5fa}
+.badge-quente{background:rgba(249,115,22,.2);color:#fb923c}
+.badge-frio{background:rgba(148,163,184,.15);color:#94a3b8}
 .wa-link{color:var(--green);text-decoration:none;font-weight:500}
 .wa-link:hover{text-decoration:underline}
 
@@ -133,11 +136,12 @@ tr:hover{background:rgba(124,92,252,.04)}
 .stat-card:nth-child(2){animation-delay:.05s}
 .stat-card:nth-child(3){animation-delay:.1s}
 .stat-card:nth-child(4){animation-delay:.15s}
-.table-wrap{animation-delay:.2s}
+.stat-card:nth-child(5){animation-delay:.2s}
+.table-wrap{animation-delay:.25s}
 
 /* Responsive */
 @media(max-width:1024px){
-  .stats{grid-template-columns:repeat(2,1fr)}
+  .stats{grid-template-columns:repeat(3,1fr)}
   .filters{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:768px){
@@ -271,7 +275,8 @@ tr:hover{background:rgba(124,92,252,.04)}
     <div class="stat-card total"><div class="stat-label">Total de Leads</div><div class="stat-value" id="statTotal">&mdash;</div></div>
     <div class="stat-card pending"><div class="stat-label">Pendentes</div><div class="stat-value" id="statPending">&mdash;</div></div>
     <div class="stat-card sent"><div class="stat-label">Enviados</div><div class="stat-value" id="statSent">&mdash;</div></div>
-    <div class="stat-card categories"><div class="stat-label">Categorias</div><div class="stat-value" id="statCategories">&mdash;</div></div>
+    <div class="stat-card hot"><div class="stat-label">🔥 Quentes</div><div class="stat-value" id="statHot">&mdash;</div></div>
+    <div class="stat-card cold"><div class="stat-label">🧊 Frios</div><div class="stat-value" id="statCold">&mdash;</div></div>
   </div>
 
   <div class="filters">
@@ -289,6 +294,8 @@ tr:hover{background:rgba(124,92,252,.04)}
         <option value="">Todos</option>
         <option value="Pending">Pendente</option>
         <option value="Sent">Enviado</option>
+        <option value="Quente">🔥 Quente</option>
+        <option value="Frio">🧊 Frio</option>
       </select>
     </div>
     <div class="filter-group">
@@ -320,7 +327,7 @@ tr:hover{background:rgba(124,92,252,.04)}
       <thead>
         <tr>
           <th>#</th><th>Negócio</th><th>WhatsApp</th><th>Bairro</th>
-          <th>Categoria</th><th>Modo</th><th>Avaliação</th><th>Status</th><th>Data</th>
+          <th>Categoria</th><th>Modo</th><th>Status</th><th>Data</th>
         </tr>
       </thead>
       <tbody id="leadsBody"></tbody>
@@ -677,7 +684,8 @@ function renderStats(s) {
   document.getElementById('statTotal').textContent = (s.total || 0).toLocaleString();
   document.getElementById('statPending').textContent = (s.pending || 0).toLocaleString();
   document.getElementById('statSent').textContent = (s.sent || 0).toLocaleString();
-  document.getElementById('statCategories').textContent = (s.categories || []).length;
+  document.getElementById('statHot').textContent = (s.quente || 0).toLocaleString();
+  document.getElementById('statCold').textContent = (s.frio || 0).toLocaleString();
 }
 
 function populateCategoryFilter(categories) {
@@ -707,20 +715,21 @@ function populateNeighborhoodFilter(neighborhoods) {
 function renderTable(leads) {
   const tbody = document.getElementById('leadsBody');
   if (!leads.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:48px">Nenhum lead encontrado</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:48px">Nenhum lead encontrado</td></tr>';
     return;
   }
   tbody.innerHTML = leads.map(function(l) {
-    const statusClass = l.status === 'Pending' ? 'badge-pending' : 'badge-sent';
-    const statusLabel = l.status === 'Pending' ? 'Pendente' : 'Enviado';
-    const waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
-    const waLink = l.whatsapp ? 'https://wa.me/' + l.whatsapp : '#';
-    const rating = l.google_rating ? '<span class="rating">\u2605 ' + l.google_rating.toFixed(1) + '</span>' : '\u2014';
-    const date = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '\u2014';
-    const saas = l.target_saas || '—';
-    const saasIcon = saas === 'Zappy' ? '🍔' : saas === 'Lojaky' ? '🛒' : '';
-    const saasBg = saas === 'Zappy' ? 'rgba(245,158,11,.15)' : saas === 'Lojaky' ? 'rgba(6,182,212,.15)' : 'transparent';
-    const saasColor = saas === 'Zappy' ? 'var(--amber)' : saas === 'Lojaky' ? 'var(--cyan)' : 'var(--text-muted)';
+    var statusMap = {'Pending':'badge-pending','Sent':'badge-sent','Quente':'badge-quente','Frio':'badge-frio'};
+    var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'🔥 Quente','Frio':'🧊 Frio'};
+    var statusClass = statusMap[l.status] || 'badge-pending';
+    var statusLabel = labelMap[l.status] || l.status;
+    var waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
+    var waLink = l.whatsapp ? 'https://wa.me/' + l.whatsapp : '#';
+    var date = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '\u2014';
+    var saas = l.target_saas || '—';
+    var saasIcon = saas === 'Zappy' ? '🍔' : saas === 'Lojaky' ? '🛒' : '';
+    var saasBg = saas === 'Zappy' ? 'rgba(245,158,11,.15)' : saas === 'Lojaky' ? 'rgba(6,182,212,.15)' : 'transparent';
+    var saasColor = saas === 'Zappy' ? 'var(--amber)' : saas === 'Lojaky' ? 'var(--cyan)' : 'var(--text-muted)';
     return '<tr>'
       + '<td>' + l.id + '</td>'
       + '<td><strong>' + escHtml(l.business_name) + '</strong></td>'
@@ -728,7 +737,6 @@ function renderTable(leads) {
       + '<td>' + escHtml(l.neighborhood || '\u2014') + '</td>'
       + '<td>' + escHtml(l.category || '\u2014') + '</td>'
       + '<td><span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75rem;font-weight:600;background:' + saasBg + ';color:' + saasColor + '">' + saasIcon + ' ' + escHtml(saas) + '</span></td>'
-      + '<td>' + rating + '</td>'
       + '<td><span class="badge ' + statusClass + '">' + statusLabel + '</span></td>'
       + '<td>' + date + '</td>'
       + '</tr>';
@@ -809,7 +817,7 @@ async def _handle_api_leads(request: web.Request) -> web.Response:
 
     query = f"""
         SELECT id, business_name, whatsapp, neighborhood, category,
-               google_rating, status, target_saas, created_at
+               status, target_saas, created_at
         FROM leads_olinda
         {where_clause}
         ORDER BY created_at DESC
@@ -826,7 +834,6 @@ async def _handle_api_leads(request: web.Request) -> web.Response:
             "whatsapp": r["whatsapp"],
             "neighborhood": r["neighborhood"],
             "category": r["category"],
-            "google_rating": r["google_rating"],
             "status": r["status"],
             "target_saas": r["target_saas"],
             "created_at": r["created_at"].isoformat() if r["created_at"] else None,
@@ -863,6 +870,8 @@ async def _handle_api_stats(request: web.Request) -> web.Response:
         total = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda{where}", *params)
         pending = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Pending'{where_and}", *params)
         sent = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Sent'{where_and}", *params)
+        quente = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Quente'{where_and}", *params)
+        frio = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Frio'{where_and}", *params)
         cat_query = f"SELECT DISTINCT category FROM leads_olinda WHERE category IS NOT NULL{where_and} ORDER BY category"
         categories = await conn.fetch(cat_query, *params)
         neigh_query = f"SELECT DISTINCT neighborhood FROM leads_olinda WHERE neighborhood IS NOT NULL{where_and} ORDER BY neighborhood"
@@ -872,6 +881,8 @@ async def _handle_api_stats(request: web.Request) -> web.Response:
         "total": total,
         "pending": pending,
         "sent": sent,
+        "quente": quente,
+        "frio": frio,
         "categories": [r["category"] for r in categories],
         "neighborhoods": [r["neighborhood"] for r in neighborhoods],
     })
@@ -904,6 +915,37 @@ async def _handle_clear_leads(request: web.Request) -> web.Response:
         count = int(result.split()[-1]) if result else 0
     logger.info("Cleared %d leads from database", count)
     return web.json_response({"deleted": count})
+
+
+async def _handle_waha_webhook(request: web.Request) -> web.Response:
+    """WAHA webhook — receives incoming WhatsApp messages.
+    When a lead replies, auto-marks them as 'Quente' (hot)."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "invalid json"}, status=400)
+
+    pool: asyncpg.Pool = request.app["db_pool"]
+    event = data.get("event", "")
+
+    # WAHA sends 'message' event for incoming messages
+    if event in ("message", "message.any"):
+        payload = data.get("payload", {})
+        # Only process incoming messages (not our own outgoing ones)
+        if payload.get("fromMe", True):
+            return web.json_response({"ok": True, "action": "ignored_own_message"})
+
+        chat_id = payload.get("from", "")
+        # Extract phone digits from chat ID (e.g. '5581999887766@c.us' -> '5581999887766')
+        phone = "".join(c for c in chat_id if c.isdigit())
+
+        if phone:
+            count = await mark_lead_hot_by_phone(pool, phone)
+            if count > 0:
+                logger.info("🔥 WAHA webhook: %s replied — marked as Quente", phone)
+                return web.json_response({"ok": True, "action": "marked_hot", "phone": phone})
+
+    return web.json_response({"ok": True, "action": "no_match"})
 
 
 async def _handle_get_settings(request: web.Request) -> web.Response:
@@ -1068,6 +1110,7 @@ def create_dashboard_app(pool: asyncpg.Pool, runtime_settings: dict | None = Non
     app.router.add_get("/api/settings", _handle_get_settings)
     app.router.add_post("/api/settings", _handle_post_settings)
     app.router.add_get("/api/scraper-info", _handle_scraper_info)
+    app.router.add_post("/api/waha/webhook", _handle_waha_webhook)
 
     # Load persisted settings from DB on startup
     app.on_startup.append(_load_settings_from_db)

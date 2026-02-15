@@ -24,7 +24,7 @@ from dotenv import load_dotenv
 from config import Settings
 from core.proxy import ProxyRotator
 from core.scraper import run_scraper
-from db import get_pool, init_db
+from db import get_pool, init_db, mark_cold_leads
 from services.dashboard import create_dashboard_app
 from services.dispatcher import dispatch_leads
 from services.waha import WahaClient
@@ -46,6 +46,16 @@ logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 _runtime_settings = {"mode": "zappy", "scrape_cities": []}
 _cycle_counter = 0
+
+
+async def _run_cold_check(pool) -> None:
+    """Mark leads as 'Frio' if sent 48+ hours ago with no reply."""
+    try:
+        count = await mark_cold_leads(pool, hours=48)
+        if count > 0:
+            logger.info("🧊 Cold check: %d leads marked as Frio", count)
+    except Exception as exc:
+        logger.error("Cold check error: %s", exc)
 
 
 async def _run_cycle(pool, settings: Settings, proxy_rotator: ProxyRotator, waha: WahaClient | None = None) -> None:
@@ -146,8 +156,18 @@ async def main() -> None:
         max_instances=1,
         misfire_grace_time=60,
     )
+    scheduler.add_job(
+        _run_cold_check,
+        "interval",
+        hours=2,
+        args=[pool],
+        id="cold_check",
+        name="Cold Lead Check",
+        max_instances=1,
+        misfire_grace_time=300,
+    )
     scheduler.start()
-    logger.info("Scheduler started — job runs every %d s", settings.scrape_interval)
+    logger.info("Scheduler started — scrape every %d s, cold check every 2h", settings.scrape_interval)
 
     # Run first cycle immediately
     asyncio.create_task(_run_cycle(pool, settings, proxy_rotator, waha))

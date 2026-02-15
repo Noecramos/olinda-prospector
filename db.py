@@ -66,6 +66,16 @@ async def init_db(pool: asyncpg.Pool) -> None:
     except Exception as exc:
         logger.warning("CEP cleanup migration error: %s", exc)
 
+    # Add sent_at column if missing
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute("""
+                ALTER TABLE leads_olinda ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ;
+            """)
+            logger.info("Ensured sent_at column exists")
+    except Exception as exc:
+        logger.warning("sent_at migration error: %s", exc)
+
 
 async def upsert_lead(
     pool: asyncpg.Pool,
@@ -112,14 +122,56 @@ async def fetch_pending_leads(pool: asyncpg.Pool, limit: int = 50) -> list[dict[
 
 
 async def mark_leads_sent(pool: asyncpg.Pool, lead_ids: list[int]) -> None:
-    """Bulk-update leads to 'Sent'."""
+    """Bulk-update leads to 'Sent' and record the timestamp."""
     if not lead_ids:
         return
     query = """
         UPDATE leads_olinda
-        SET status = 'Sent'
+        SET status = 'Sent', sent_at = NOW()
         WHERE id = ANY($1::int[]);
     """
     async with pool.acquire() as conn:
         await conn.execute(query, lead_ids)
     logger.info("Marked %d leads as Sent", len(lead_ids))
+
+
+async def mark_lead_hot_by_phone(pool: asyncpg.Pool, phone: str) -> int:
+    """
+    Mark a lead as 'Quente' (hot) when we receive a WhatsApp reply.
+    Matches on the phone number. Returns number of rows updated.
+    """
+    # Strip non-digits for matching
+    digits = "".join(c for c in phone if c.isdigit())
+    if not digits:
+        return 0
+    query = """
+        UPDATE leads_olinda
+        SET status = 'Quente'
+        WHERE whatsapp = $1 AND status = 'Sent';
+    """
+    async with pool.acquire() as conn:
+        result = await conn.execute(query, digits)
+    count = int(result.split()[-1]) if result else 0
+    if count > 0:
+        logger.info("🔥 Marked %d lead(s) as Quente for phone %s", count, digits)
+    return count
+
+
+async def mark_cold_leads(pool: asyncpg.Pool, hours: int = 48) -> int:
+    """
+    Mark leads as 'Frio' if they were sent more than `hours` ago
+    and haven't received a reply (still status='Sent').
+    """
+    query = """
+        UPDATE leads_olinda
+        SET status = 'Frio'
+        WHERE status = 'Sent'
+          AND sent_at IS NOT NULL
+          AND sent_at < NOW() - INTERVAL '1 hour' * $1;
+    """
+    async with pool.acquire() as conn:
+        result = await conn.execute(query, hours)
+    count = int(result.split()[-1]) if result else 0
+    if count > 0:
+        logger.info("🧊 Marked %d leads as Frio (no reply after %dh)", count, hours)
+    return count
