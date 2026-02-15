@@ -109,7 +109,7 @@ tr:hover{background:rgba(124,92,252,.04)}
 <body>
 <div class="container">
   <header>
-    <h1>__TITLE__ <span>Dashboard</span></h1>
+    <h1>Prospector <span>Dashboard</span></h1>
     <div class="header-actions">
       <a class="btn" href="/api/export/csv" id="exportBtn">&#11015; Export CSV</a>
       <button class="btn" onclick="clearAll()" style="border-color:var(--red);color:var(--red)">&#128465; Clear All</button>
@@ -126,11 +126,25 @@ tr:hover{background:rgba(124,92,252,.04)}
 
   <div class="filters">
     <div class="filter-group">
+      <label>Mode</label>
+      <select id="filterMode" onchange="onModeChange()">
+        <option value="">All</option>
+        <option value="Zappy">🍔 Zappy</option>
+        <option value="Lojaky">🛒 Lojaky</option>
+      </select>
+    </div>
+    <div class="filter-group">
       <label>Status</label>
       <select id="filterStatus" onchange="loadData()">
         <option value="">All</option>
         <option value="Pending">Pending</option>
         <option value="Sent">Sent</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Neighborhood</label>
+      <select id="filterNeighborhood" onchange="loadData()">
+        <option value="">All</option>
       </select>
     </div>
     <div class="filter-group">
@@ -168,9 +182,20 @@ tr:hover{background:rgba(124,92,252,.04)}
 
 <script>
 let allLeads = [];
-const MODE = '__MODE__';
-const TARGET_SAAS = MODE === 'zappy' ? 'Zappy' : 'Lojaky';
 let whatsAppOnly = true;
+
+function getSelectedMode() {
+  return document.getElementById('filterMode').value;
+}
+
+function onModeChange() {
+  const mode = getSelectedMode();
+  const h1 = document.querySelector('h1');
+  if (mode === 'Zappy') h1.innerHTML = '🍔 Zappy <span>Dashboard</span>';
+  else if (mode === 'Lojaky') h1.innerHTML = '🛒 Lojaky <span>Dashboard</span>';
+  else h1.innerHTML = 'Prospector <span>Dashboard</span>';
+  loadData();
+}
 
 function toggleWhatsApp() {
   whatsAppOnly = !whatsAppOnly;
@@ -180,21 +205,29 @@ function toggleWhatsApp() {
 }
 
 async function loadData() {
+  const mode = getSelectedMode();
   const status = document.getElementById('filterStatus').value;
   const category = document.getElementById('filterCategory').value;
+  const neighborhood = document.getElementById('filterNeighborhood').value;
   const params = new URLSearchParams();
-  params.set('target_saas', TARGET_SAAS);
+  if (mode) params.set('target_saas', mode);
   if (whatsAppOnly) params.set('has_whatsapp', '1');
   if (status) params.set('status', status);
   if (category) params.set('category', category);
+  if (neighborhood) params.set('neighborhood', neighborhood);
 
   const exportParams = new URLSearchParams(params);
   document.getElementById('exportBtn').href = '/api/export/csv?' + exportParams.toString();
 
+  const statsParams = new URLSearchParams();
+  if (mode) statsParams.set('target_saas', mode);
+  if (whatsAppOnly) statsParams.set('has_whatsapp', '1');
+  if (neighborhood) statsParams.set('neighborhood', neighborhood);
+
   try {
     const [leadsRes, statsRes] = await Promise.all([
       fetch('/api/leads?' + params.toString()),
-      fetch('/api/stats?' + new URLSearchParams(Object.assign({target_saas: TARGET_SAAS}, whatsAppOnly ? {has_whatsapp: '1'} : {})).toString())
+      fetch('/api/stats?' + statsParams.toString())
     ]);
     const leadsData = await leadsRes.json();
     const statsData = await statsRes.json();
@@ -203,6 +236,7 @@ async function loadData() {
     renderStats(statsData);
     renderTable(allLeads);
     populateCategoryFilter(statsData.categories || []);
+    populateNeighborhoodFilter(statsData.neighborhoods || []);
   } catch (e) {
     console.error('Failed to load data:', e);
   }
@@ -223,6 +257,18 @@ function populateCategoryFilter(categories) {
     const opt = document.createElement('option');
     opt.value = c; opt.textContent = c;
     if (c === current) opt.selected = true;
+    el.appendChild(opt);
+  });
+}
+
+function populateNeighborhoodFilter(neighborhoods) {
+  const el = document.getElementById('filterNeighborhood');
+  const current = el.value;
+  el.innerHTML = '<option value="">All</option>';
+  neighborhoods.forEach(function(n) {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    if (n === current) opt.selected = true;
     el.appendChild(opt);
   });
 }
@@ -316,6 +362,7 @@ async def _handle_api_leads(request: web.Request) -> web.Response:
     category = request.query.get("category")
     target_saas = request.query.get("target_saas")
     has_whatsapp = request.query.get("has_whatsapp")
+    neighborhood = request.query.get("neighborhood")
 
     conditions: list[str] = []
     params: list[Any] = []
@@ -333,6 +380,10 @@ async def _handle_api_leads(request: web.Request) -> web.Response:
         conditions.append(f"target_saas = ${idx}")
         params.append(target_saas)
         idx += 1
+    if neighborhood:
+        conditions.append(f"neighborhood = ${idx}")
+        params.append(neighborhood)
+        idx += 1
     if has_whatsapp:
         conditions.append("whatsapp IS NOT NULL")
 
@@ -345,7 +396,7 @@ async def _handle_api_leads(request: web.Request) -> web.Response:
         FROM leads_olinda
         {where_clause}
         ORDER BY created_at DESC
-        LIMIT 500;
+        LIMIT 1000;
     """
     async with pool.acquire() as conn:
         rows = await conn.fetch(query, *params)
@@ -371,6 +422,7 @@ async def _handle_api_stats(request: web.Request) -> web.Response:
     pool: asyncpg.Pool = request.app["db_pool"]
     target_saas = request.query.get("target_saas")
     has_whatsapp = request.query.get("has_whatsapp")
+    neighborhood = request.query.get("neighborhood")
 
     # Build WHERE clause for stats too
     conditions: list[str] = []
@@ -379,6 +431,10 @@ async def _handle_api_stats(request: web.Request) -> web.Response:
     if target_saas:
         conditions.append(f"target_saas = ${idx}")
         params.append(target_saas)
+        idx += 1
+    if neighborhood:
+        conditions.append(f"neighborhood = ${idx}")
+        params.append(neighborhood)
         idx += 1
     if has_whatsapp:
         conditions.append("whatsapp IS NOT NULL")
@@ -392,12 +448,15 @@ async def _handle_api_stats(request: web.Request) -> web.Response:
         sent = await conn.fetchval(f"SELECT COUNT(*) FROM leads_olinda WHERE status = 'Sent'{where_and}", *params)
         cat_query = f"SELECT DISTINCT category FROM leads_olinda WHERE category IS NOT NULL{where_and} ORDER BY category"
         categories = await conn.fetch(cat_query, *params)
+        neigh_query = f"SELECT DISTINCT neighborhood FROM leads_olinda WHERE neighborhood IS NOT NULL{where_and} ORDER BY neighborhood"
+        neighborhoods = await conn.fetch(neigh_query, *params)
 
     return web.json_response({
         "total": total,
         "pending": pending,
         "sent": sent,
         "categories": [r["category"] for r in categories],
+        "neighborhoods": [r["neighborhood"] for r in neighborhoods],
     })
 
 

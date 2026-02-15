@@ -179,39 +179,76 @@ LOJAKY_CATEGORIES = [
 
 SEARCH_LOCATION = "Olinda, PE"
 
-# Olinda neighbourhoods — each one generates a separate Maps search per category
-OLINDA_NEIGHBORHOODS = [
-    "Casa Caiada",
-    "Bairro Novo",
-    "Rio Doce",
-    "Jardim Atlântico",
-    "Peixinhos",
-    "Ouro Preto",
-    "Cidade Tabajara",
-    "Águas Compridas",
-    "Amparo",
-    "Carmo",
-    "Varadouro",
-    "Salgadinho",
-    "Bultrins",
-    "Fragoso",
-    "Jardim Fragoso",
-    "Sapucaia",
-    "Monte",
-    "Guadalupe",
-    "Caixa D'Água",
-    "Alto da Sé",
-    "Amaro Branco",
-    "Bonsucesso",
-    "São Benedito",
-    "Passarinho",
-    "Alto da Bondade",
-    "Jardim Brasil",
-    "Sítio Novo",
-    "Aguazinha",
-    "Pau Amarelo",
-    "Jatobá",
-]
+# ── Locations by city — each city has its own neighborhoods ──
+CITY_LOCATIONS = {
+    "Olinda, PE": [
+        "Casa Caiada",
+        "Bairro Novo",
+        "Rio Doce",
+        "Jardim Atlântico",
+        "Peixinhos",
+        "Ouro Preto",
+        "Cidade Tabajara",
+        "Águas Compridas",
+        "Amparo",
+        "Carmo",
+        "Varadouro",
+        "Salgadinho",
+        "Bultrins",
+        "Fragoso",
+        "Jardim Fragoso",
+        "Sapucaia",
+        "Monte",
+        "Guadalupe",
+        "Caixa D'Água",
+        "Alto da Sé",
+        "Amaro Branco",
+        "Bonsucesso",
+        "São Benedito",
+        "Passarinho",
+        "Alto da Bondade",
+        "Jardim Brasil",
+        "Sítio Novo",
+        "Aguazinha",
+        "Pau Amarelo",
+        "Jatobá",
+    ],
+    "Camaragibe, PE": [
+        "Centro",
+        "Aldeia dos Camarás",
+        "Vera Cruz",
+        "Chã de Cruz",
+        "Tabatinga",
+        "Bairro dos Estados",
+        "Timbi",
+        "Alberto Maia",
+        "Céu Azul",
+        "Santa Mônica",
+        "Vila da Fábrica",
+        "Vale das Pedreiras",
+        "Areeiro",
+        "João Paulo II",
+        "Borboleta",
+        "Jardim Primavera",
+        "Monte Alegre",
+    ],
+    "Várzea, Recife, PE": [
+        "Várzea",
+    ],
+    "São Lourenço da Mata, PE": [
+        "Centro",
+        "Nova Tiúma",
+        "Tiúma",
+        "Matriz da Luz",
+        "Pixete",
+        "São Lázaro",
+        "Jardim Teresópolis",
+        "Dois Unidos",
+    ],
+}
+
+# Keep backward compat
+OLINDA_NEIGHBORHOODS = CITY_LOCATIONS["Olinda, PE"]
 
 MAX_SCROLL_ATTEMPTS = 40
 SELECTOR_RETRY = 3
@@ -507,14 +544,17 @@ async def run_scraper(pool: asyncpg.Pool, proxy_rotator: ProxyRotator | None = N
         categories = ZAPPY_CATEGORIES if mode == "zappy" else LOJAKY_CATEGORIES
         target_saas = _classify_target_saas(mode)
 
-        # Build search locations: city-wide + each neighbourhood
-        locations = [SEARCH_LOCATION] + [
-            f"{n}, Olinda, PE" for n in OLINDA_NEIGHBORHOODS
-        ]
+        # Build search locations: city-wide + each neighbourhood for ALL cities
+        locations = []
+        for city, neighborhoods in CITY_LOCATIONS.items():
+            locations.append(city)  # City-wide search
+            for n in neighborhoods:
+                locations.append(f"{n}, {city}")
+        
         total_queries = len(categories) * len(locations)
         logger.info(
-            "Mode: %s — %d categories × %d locations = %d queries",
-            mode, len(categories), len(locations), total_queries,
+            "Mode: %s — %d categories × %d locations (%d cities) = %d queries",
+            mode, len(categories), len(locations), len(CITY_LOCATIONS), total_queries,
         )
 
         query_num = 0
