@@ -170,6 +170,7 @@ tr:hover{background:rgba(124,92,252,.04)}
     <div class="header-brand">
       <img src="/static/logo.png" alt="NoviApp">
       <h1>+Leads <span>Painel</span></h1>
+      <div id="modeBadge" style="display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;font-size:.78rem;font-weight:600;margin-left:10px;background:rgba(147,51,234,.15);color:var(--accent);border:1px solid var(--accent)">⚙️ <span id="modeBadgeText">—</span></div>
     </div>
     <div class="header-actions">
       <a class="btn" href="/api/export/csv" id="exportBtn">&#11015; Exportar CSV</a>
@@ -308,7 +309,7 @@ tr:hover{background:rgba(124,92,252,.04)}
       <thead>
         <tr>
           <th>#</th><th>Negócio</th><th>WhatsApp</th><th>Bairro</th>
-          <th>Categoria</th><th>Avaliação</th><th>Status</th><th>Data</th>
+          <th>Categoria</th><th>Modo</th><th>Avaliação</th><th>Status</th><th>Data</th>
         </tr>
       </thead>
       <tbody id="leadsBody"></tbody>
@@ -328,11 +329,28 @@ function getSelectedMode() {
 
 function onModeChange() {
   const mode = getSelectedMode();
+  console.log('onModeChange called - mode:', mode);
   const h1 = document.querySelector('h1');
   if (mode === 'Zappy') h1.innerHTML = '+Leads <span>🍔 Zappy</span>';
   else if (mode === 'Lojaky') h1.innerHTML = '+Leads <span>🛒 Lojaky</span>';
   else h1.innerHTML = '+Leads <span>Painel</span>';
   loadData();
+}
+
+function updateModeBadge(scraperMode) {
+  const badge = document.getElementById('modeBadge');
+  const text = document.getElementById('modeBadgeText');
+  if (scraperMode === 'lojaky') {
+    text.textContent = 'Scraper: 🛒 Lojaky';
+    badge.style.background = 'rgba(6,182,212,.15)';
+    badge.style.color = 'var(--cyan)';
+    badge.style.borderColor = 'var(--cyan)';
+  } else {
+    text.textContent = 'Scraper: 🍔 Zappy';
+    badge.style.background = 'rgba(245,158,11,.15)';
+    badge.style.color = 'var(--amber)';
+    badge.style.borderColor = 'var(--amber)';
+  }
 }
 
 function toggleWhatsApp() {
@@ -426,7 +444,16 @@ async function loadSettings() {
   try {
     const res = await fetch('/api/settings');
     const data = await res.json();
-    document.getElementById('scraperMode').value = data.mode || 'zappy';
+    const scraperMode = data.mode || 'zappy';
+    document.getElementById('scraperMode').value = scraperMode;
+    updateModeBadge(scraperMode);
+
+    // Auto-select the display filter to match the scraper mode
+    const filterModeEl = document.getElementById('filterMode');
+    const filterVal = scraperMode === 'lojaky' ? 'Lojaky' : 'Zappy';
+    filterModeEl.value = filterVal;
+    onModeChange();
+
     const cities = data.scrape_cities || [];
     const chips = document.querySelectorAll('#cityChips .city-chip');
     if (cities.length > 0) {
@@ -500,6 +527,13 @@ async function saveSettings() {
     const status = document.getElementById('settingsStatus');
     status.classList.add('show');
     setTimeout(function() { status.classList.remove('show'); }, 2500);
+
+    // Sync display filter and mode badge with new scraper mode
+    updateModeBadge(mode);
+    const filterModeEl = document.getElementById('filterMode');
+    filterModeEl.value = mode === 'lojaky' ? 'Lojaky' : 'Zappy';
+    onModeChange();
+
     loadScraperInfo();
   } catch (e) { alert('Erro ao salvar: ' + e.message); }
 }
@@ -581,7 +615,7 @@ function populateNeighborhoodFilter(neighborhoods) {
 function renderTable(leads) {
   const tbody = document.getElementById('leadsBody');
   if (!leads.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:48px">Nenhum lead encontrado</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:48px">Nenhum lead encontrado</td></tr>';
     return;
   }
   tbody.innerHTML = leads.map(function(l) {
@@ -591,12 +625,17 @@ function renderTable(leads) {
     const waLink = l.whatsapp ? 'https://wa.me/' + l.whatsapp : '#';
     const rating = l.google_rating ? '<span class="rating">\u2605 ' + l.google_rating.toFixed(1) + '</span>' : '\u2014';
     const date = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '\u2014';
+    const saas = l.target_saas || '—';
+    const saasIcon = saas === 'Zappy' ? '🍔' : saas === 'Lojaky' ? '🛒' : '';
+    const saasBg = saas === 'Zappy' ? 'rgba(245,158,11,.15)' : saas === 'Lojaky' ? 'rgba(6,182,212,.15)' : 'transparent';
+    const saasColor = saas === 'Zappy' ? 'var(--amber)' : saas === 'Lojaky' ? 'var(--cyan)' : 'var(--text-muted)';
     return '<tr>'
       + '<td>' + l.id + '</td>'
       + '<td><strong>' + escHtml(l.business_name) + '</strong></td>'
       + '<td><a class="wa-link" href="' + waLink + '" target="_blank">' + waFormatted + '</a></td>'
       + '<td>' + escHtml(l.neighborhood || '\u2014') + '</td>'
       + '<td>' + escHtml(l.category || '\u2014') + '</td>'
+      + '<td><span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75rem;font-weight:600;background:' + saasBg + ';color:' + saasColor + '">' + saasIcon + ' ' + escHtml(saas) + '</span></td>'
       + '<td>' + rating + '</td>'
       + '<td><span class="badge ' + statusClass + '">' + statusLabel + '</span></td>'
       + '<td>' + date + '</td>'
