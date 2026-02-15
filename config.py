@@ -35,7 +35,7 @@ class Settings:
         n8n_webhook_url = os.getenv("N8N_WEBHOOK_URL", "")
         n8n_webhook_api_key = os.getenv("N8N_WEBHOOK_API_KEY", "")
         scrape_interval = int(os.getenv("SCRAPE_INTERVAL", "3600"))
-        dashboard_port = int(os.getenv("DASHBOARD_PORT", "8080"))
+        dashboard_port = int(os.getenv("PORT", os.getenv("DASHBOARD_PORT", "8080")))
 
         # Comma-separated proxy list: http://user:pass@host:port,...
         raw_proxies = os.getenv("PROXY_LIST", "")
