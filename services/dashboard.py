@@ -28,7 +28,7 @@ _DASHBOARD_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NoviApp-Leads — Dashboard</title>
+<title>+Leads — Dashboard</title>
 <link rel="icon" type="image/png" href="/static/favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -114,7 +114,7 @@ tr:hover{background:rgba(124,92,252,.04)}
   <header>
     <div class="header-brand">
       <img src="/static/logo.png" alt="NoviApp">
-      <h1>NoviApp-Leads <span>Dashboard</span></h1>
+      <h1>+Leads <span>Dashboard</span></h1>
     </div>
     <div class="header-actions">
       <a class="btn" href="/api/export/csv" id="exportBtn">&#11015; Export CSV</a>
@@ -183,7 +183,7 @@ tr:hover{background:rgba(124,92,252,.04)}
     </table>
   </div>
 
-  <div class="footer">NoviApp-Leads &copy; 2026</div>
+  <div class="footer">+Leads &copy; 2026</div>
 </div>
 
 <script>
@@ -197,9 +197,9 @@ function getSelectedMode() {
 function onModeChange() {
   const mode = getSelectedMode();
   const h1 = document.querySelector('h1');
-  if (mode === 'Zappy') h1.innerHTML = 'NoviApp-Leads <span>🍔 Zappy</span>';
-  else if (mode === 'Lojaky') h1.innerHTML = 'NoviApp-Leads <span>🛒 Lojaky</span>';
-  else h1.innerHTML = 'NoviApp-Leads <span>Dashboard</span>';
+  if (mode === 'Zappy') h1.innerHTML = '+Leads <span>🍔 Zappy</span>';
+  else if (mode === 'Lojaky') h1.innerHTML = '+Leads <span>🛒 Lojaky</span>';
+  else h1.innerHTML = '+Leads <span>Dashboard</span>';
   loadData();
 }
 
