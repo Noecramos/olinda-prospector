@@ -215,18 +215,28 @@ tr:hover{background:rgba(124,92,252,.04)}
 
     <div class="settings-columns">
       <div class="settings-section">
-        <label class="section-label">📍 Cidades Ativas <span>(clique para ativar/desativar)</span></label>
-        <div class="city-chips" id="cityChips" style="margin-bottom:10px">
-          <div class="city-chip active" data-city="Olinda, PE" onclick="toggleCity(this)">📍 Olinda</div>
-          <div class="city-chip active" data-city="Camaragibe, PE" onclick="toggleCity(this)">📍 Camaragibe</div>
-          <div class="city-chip active" data-city="Várzea, Recife, PE" onclick="toggleCity(this)">📍 Várzea (Recife)</div>
-          <div class="city-chip active" data-city="São Lourenço da Mata, PE" onclick="toggleCity(this)">📍 São Lourenço da Mata</div>
+        <div class="active-list-wrap open" id="cidadesWrap">
+          <div class="active-list-header" onclick="toggleListBox('cidadesWrap')">
+            <span>📍 Cidades e Bairros Ativos <span style="color:var(--accent)" id="cidadesCount"></span></span>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="active-list-box" id="cidadesContent" style="max-height:800px;padding:0 14px 14px">
+            <div style="margin-bottom:10px;padding-top:8px">
+              <label class="section-label" style="margin-bottom:8px;display:block">Cidades <span>(clique para ativar/desativar)</span></label>
+              <div class="city-chips" id="cityChips" style="margin-bottom:10px">
+                <div class="city-chip active" data-city="Olinda, PE" onclick="toggleCity(this)">📍 Olinda</div>
+                <div class="city-chip active" data-city="Camaragibe, PE" onclick="toggleCity(this)">📍 Camaragibe</div>
+                <div class="city-chip active" data-city="Várzea, Recife, PE" onclick="toggleCity(this)">📍 Várzea (Recife)</div>
+                <div class="city-chip active" data-city="São Lourenço da Mata, PE" onclick="toggleCity(this)">📍 São Lourenço da Mata</div>
+              </div>
+              <div class="add-row">
+                <input type="text" id="newCity" placeholder="Ex: Jaboatão, PE..." onkeydown="if(event.key==='Enter'){addCity()}">
+                <button class="btn" onclick="addCity()" style="padding:8px 16px;white-space:nowrap">+ Adicionar</button>
+              </div>
+            </div>
+            <div id="cityNeighborhoodsContainer"></div>
+          </div>
         </div>
-        <div class="add-row">
-          <input type="text" id="newCity" placeholder="Ex: Jaboatão, PE..." onkeydown="if(event.key==='Enter'){addCity()}">
-          <button class="btn" onclick="addCity()" style="padding:8px 16px;white-space:nowrap">+ Adicionar</button>
-        </div>
-        <div id="cityNeighborhoodsContainer" style="margin-top:16px"></div>
       </div>
       <div class="settings-section">
         <div class="active-list-wrap" id="catWrap">

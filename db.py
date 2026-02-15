@@ -51,6 +51,21 @@ async def init_db(pool: asyncpg.Pool) -> None:
         await conn.execute(sql)
     logger.info("Database schema initialised")
 
+    # One-time cleanup: fix CEPs stored as neighborhood names
+    try:
+        async with pool.acquire() as conn:
+            result = await conn.execute("""
+                UPDATE leads_olinda
+                SET neighborhood = NULL
+                WHERE neighborhood ~ '^\\d{2}\\.?\\d{3}-?\\d{3}$'
+                   OR neighborhood ~ '^\\d{5,}$'
+            """)
+            count = int(result.split()[-1]) if result else 0
+            if count > 0:
+                logger.info("Cleaned up %d leads with CEP as neighborhood", count)
+    except Exception as exc:
+        logger.warning("CEP cleanup migration error: %s", exc)
+
 
 async def upsert_lead(
     pool: asyncpg.Pool,
