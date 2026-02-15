@@ -62,8 +62,7 @@ async def init_db(pool: asyncpg.Pool) -> None:
                    OR neighborhood ~ '^\d+\s*-\s*\d'
             """)
             count = int(result.split()[-1]) if result else 0
-            if count > 0:
-                logger.info("Cleaned up %d leads with CEP as neighborhood", count)
+            logger.info("CEP cleanup: %d neighborhoods cleared", count)
     except Exception as exc:
         logger.warning("CEP cleanup migration error: %s", exc)
 
