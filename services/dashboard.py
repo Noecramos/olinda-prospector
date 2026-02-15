@@ -137,8 +137,14 @@ tr:hover{background:rgba(124,92,252,.04)}
 .info-tag{padding:3px 10px;background:var(--card);border:1px solid var(--border);border-radius:12px;font-size:.7rem;color:var(--text-muted)}
 
 /* Settings Panel */
-.settings-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px 32px;margin-bottom:28px;animation:fadeUp .3s ease-out both}
-.settings-panel h2{font-size:1rem;font-weight:600;margin-bottom:20px;color:var(--text);display:flex;align-items:center;gap:8px}
+.settings-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:28px;animation:fadeUp .3s ease-out both}
+.settings-toggle{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;cursor:pointer;user-select:none;transition:background .2s}
+.settings-toggle:hover{background:rgba(147,51,234,.06)}
+.settings-toggle h2{font-size:1rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;margin:0}
+.settings-toggle .arrow{font-size:.7rem;color:var(--text-muted);transition:transform .3s ease}
+.settings-panel.collapsed .arrow{transform:rotate(-90deg)}
+.settings-body{max-height:2000px;overflow:hidden;transition:max-height .4s ease-in-out;padding:0 32px 28px}
+.settings-panel.collapsed .settings-body{max-height:0;padding:0 32px}
 .settings-panel h2 span{color:var(--text-muted);font-weight:400;font-size:.75rem}
 .settings-section{margin-bottom:0}
 .section-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;display:block}
@@ -221,8 +227,12 @@ tr:hover{background:rgba(124,92,252,.04)}
     </div>
   </header>
 
-  <div class="settings-panel" id="settingsPanel">
-    <h2>⚙️ Configurações do Scraper <span id="settingsStatus" class="settings-status">✓ Salvo!</span></h2>
+  <div class="settings-panel collapsed" id="settingsPanel">
+    <div class="settings-toggle" onclick="document.getElementById('settingsPanel').classList.toggle('collapsed')">
+      <h2>⚙️ Configurações do Scraper <span id="settingsStatus" class="settings-status">✓ Salvo!</span></h2>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="settings-body">
 
     <div class="settings-section">
       <label class="section-label">Modo do Scraper</label>
@@ -306,6 +316,7 @@ tr:hover{background:rgba(124,92,252,.04)}
           <div class="active-list-box" id="bairroInfo"></div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 
