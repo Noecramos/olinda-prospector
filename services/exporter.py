@@ -62,8 +62,10 @@ async def export_leads_csv(
         rows = await conn.fetch(query, *params)
 
     output = io.StringIO()
+    # Write sep= hint so Excel auto-detects semicolons
+    output.write("sep=;\n")
     # Use semicolon delimiter — Brazilian Excel default
-    writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_MINIMAL)
+    writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_ALL)
 
     # Header in Portuguese
     writer.writerow([
@@ -88,10 +90,15 @@ async def export_leads_csv(
         elif status_val == "Sent":
             status_val = "Enviado"
 
+        # Format WhatsApp so Excel keeps it as text
+        wa = row["whatsapp"] or ""
+        if wa:
+            wa = f"+{wa[:2]} ({wa[2:4]}) {wa[4:9]}-{wa[9:]}" if len(wa) >= 11 else wa
+
         writer.writerow([
             row["id"],
             row["business_name"],
-            row["whatsapp"] or "",
+            wa,
             row["neighborhood"] or "",
             row["category"] or "",
             rating_str,
@@ -100,8 +107,7 @@ async def export_leads_csv(
             created,
         ])
 
-    # Add UTF-8 BOM so Excel opens with correct encoding for accents
-    csv_content = "\ufeff" + output.getvalue()
+    csv_content = output.getvalue()
     logger.info("Exported %d leads to CSV", len(rows))
     return csv_content
 
