@@ -630,7 +630,6 @@ async def _scrape_category(
                 # Brazilian addresses: "Rua X, 123 - Bairro, Cidade - UF, CEP"
                 # or: "Rua X, Bairro, Olinda - PE, 53020-140"
                 # We need to extract the bairro (neighborhood) name
-                import re
                 parts = [p.strip() for p in addr_text.split(",")]
                 neighborhood = None
                 for part in parts:
