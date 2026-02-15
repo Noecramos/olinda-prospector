@@ -28,13 +28,14 @@ _DASHBOARD_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>__TITLE__ — Dashboard</title>
+<title>NoviApp-Leads — Dashboard</title>
+<link rel="icon" type="image/png" href="/static/favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0f0f13;--surface:#1a1a24;--card:#22223a;--border:#2e2e4a;
-  --text:#e8e8f0;--text-muted:#8888aa;--accent:__ACCENT__;--accent-glow:__ACCENT_GLOW__;
+  --text:#e8e8f0;--text-muted:#8888aa;--accent:#9333ea;--accent-glow:#9333ea44;
   --green:#22c55e;--amber:#f59e0b;--red:#ef4444;--cyan:#06b6d4;
 }
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
@@ -42,7 +43,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 
 /* Header */
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px}
-h1{font-size:1.6rem;font-weight:700;background:linear-gradient(135deg,__ACCENT__,__SECONDARY__);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-brand{display:flex;align-items:center;gap:12px}
+.header-brand img{height:36px}
+h1{font-size:1.6rem;font-weight:700;background:linear-gradient(135deg,#9333ea,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 h1 span{font-weight:300;opacity:.7}
 .header-actions{display:flex;gap:10px}
 .btn{padding:8px 18px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);cursor:pointer;font-size:.85rem;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
@@ -109,7 +112,10 @@ tr:hover{background:rgba(124,92,252,.04)}
 <body>
 <div class="container">
   <header>
-    <h1>Prospector <span>Dashboard</span></h1>
+    <div class="header-brand">
+      <img src="/static/logo.png" alt="NoviApp">
+      <h1>NoviApp-Leads <span>Dashboard</span></h1>
+    </div>
     <div class="header-actions">
       <a class="btn" href="/api/export/csv" id="exportBtn">&#11015; Export CSV</a>
       <button class="btn" onclick="clearAll()" style="border-color:var(--red);color:var(--red)">&#128465; Clear All</button>
@@ -177,7 +183,7 @@ tr:hover{background:rgba(124,92,252,.04)}
     </table>
   </div>
 
-  <div class="footer">__FOOTER__ &copy; 2026</div>
+  <div class="footer">NoviApp-Leads &copy; 2026</div>
 </div>
 
 <script>
@@ -191,9 +197,9 @@ function getSelectedMode() {
 function onModeChange() {
   const mode = getSelectedMode();
   const h1 = document.querySelector('h1');
-  if (mode === 'Zappy') h1.innerHTML = '🍔 Zappy <span>Dashboard</span>';
-  else if (mode === 'Lojaky') h1.innerHTML = '🛒 Lojaky <span>Dashboard</span>';
-  else h1.innerHTML = 'Prospector <span>Dashboard</span>';
+  if (mode === 'Zappy') h1.innerHTML = 'NoviApp-Leads <span>🍔 Zappy</span>';
+  else if (mode === 'Lojaky') h1.innerHTML = 'NoviApp-Leads <span>🛒 Lojaky</span>';
+  else h1.innerHTML = 'NoviApp-Leads <span>Dashboard</span>';
   loadData();
 }
 
@@ -325,34 +331,13 @@ setInterval(loadData, 30000);
 </html>"""
 
 
-def _build_dashboard_html(mode: str = "zappy") -> str:
-    """Generate the dashboard HTML with mode-specific branding."""
-    if mode == "zappy":
-        title = "Zappy Prospector"
-        accent = "#7c5cfc"
-        accent_glow = "#7c5cfc44"
-        secondary = "#a855f7"
-        footer_label = "Zappy &mdash; Food &amp; Beverage Leads"
-    else:
-        title = "Lojaky Prospector"
-        accent = "#06b6d4"
-        accent_glow = "#06b6d444"
-        secondary = "#22d3ee"
-        footer_label = "Lojaky &mdash; Retail &amp; Services Leads"
-
-    html = _DASHBOARD_TEMPLATE
-    html = html.replace("__TITLE__", title)
-    html = html.replace("__ACCENT_GLOW__", accent_glow)
-    html = html.replace("__ACCENT__", accent)
-    html = html.replace("__SECONDARY__", secondary)
-    html = html.replace("__FOOTER__", footer_label)
-    html = html.replace("__MODE__", mode)
-    return html
+def _build_dashboard_html() -> str:
+    """Generate the dashboard HTML."""
+    return _DASHBOARD_TEMPLATE
 
 
 async def _handle_index(request: web.Request) -> web.Response:
-    mode = request.app.get("mode", "zappy")
-    html = _build_dashboard_html(mode)
+    html = _build_dashboard_html()
     return web.Response(text=html, content_type="text/html")
 
 
@@ -491,6 +476,7 @@ async def _handle_clear_leads(request: web.Request) -> web.Response:
 
 def create_dashboard_app(pool: asyncpg.Pool, mode: str = "zappy") -> web.Application:
     """Create and return the dashboard aiohttp Application."""
+    import os
     app = web.Application()
     app["db_pool"] = pool
     app["mode"] = mode
@@ -500,5 +486,10 @@ def create_dashboard_app(pool: asyncpg.Pool, mode: str = "zappy") -> web.Applica
     app.router.add_get("/api/stats", _handle_api_stats)
     app.router.add_get("/api/export/csv", _handle_export_csv)
     app.router.add_delete("/api/leads/clear", _handle_clear_leads)
+
+    # Serve static files (logo, favicon)
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+    if os.path.isdir(static_dir):
+        app.router.add_static("/static/", static_dir, name="static")
 
     return app
