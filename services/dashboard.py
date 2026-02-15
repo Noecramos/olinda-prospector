@@ -239,23 +239,17 @@ tr:hover{background:rgba(124,92,252,.04)}
 
   <div class="settings-panel collapsed" id="settingsPanel">
     <div class="settings-toggle" onclick="document.getElementById('settingsPanel').classList.toggle('collapsed')">
-      <h2>⚙️ Configurações do Scraper <span id="settingsStatus" class="settings-status">✓ Salvo!</span></h2>
-      <div style="display:flex;align-items:center;gap:10px">
-        <button class="btn-save" onclick="event.stopPropagation();saveSettings()" style="padding:6px 16px;font-size:.78rem">💾 Salvar</button>
+      <h2>⚙️ Configurações <span id="settingsStatus" class="settings-status">✓ Salvo!</span></h2>
+      <div style="display:flex;align-items:center;gap:10px" onclick="event.stopPropagation()">
+        <select id="scraperMode" onchange="saveSettings()" style="padding:6px 12px;font-size:.78rem;border-radius:6px;background:var(--surface);color:var(--text);border:1px solid var(--border);cursor:pointer">
+          <option value="zappy">🍔 Zappy</option>
+          <option value="lojaky">🛒 Lojaky</option>
+        </select>
+        <button class="btn-save" onclick="saveSettings()" style="padding:6px 16px;font-size:.78rem">💾 Salvar</button>
         <span class="arrow">▼</span>
       </div>
     </div>
     <div class="settings-body">
-
-    <div class="settings-section">
-      <label class="section-label">Modo do Scraper</label>
-      <select id="scraperMode" style="max-width:350px">
-        <option value="zappy">🍔 Zappy (Alimentação)</option>
-        <option value="lojaky">🛒 Lojaky (Comércio)</option>
-      </select>
-    </div>
-
-    <hr class="divider">
 
     <div class="settings-columns">
       <div class="settings-section">
