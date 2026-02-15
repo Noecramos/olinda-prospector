@@ -99,7 +99,7 @@ tr:hover{background:rgba(124,92,252,.04)}
 .active-list-header .arrow{font-size:.65rem;color:var(--text-muted);transition:transform .2s}
 .active-list-wrap.open .arrow{transform:rotate(180deg)}
 .active-list-box{padding:0 14px 14px;display:flex;flex-wrap:wrap;gap:6px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease}
-.active-list-wrap.open .active-list-box{max-height:300px;overflow-y:auto;padding:0 14px 14px}
+.active-list-wrap.open .active-list-box{max-height:900px;overflow-y:auto;padding:0 14px 14px}
 .active-list-box::-webkit-scrollbar{width:4px}
 .active-list-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 .info-tag{padding:3px 10px;background:var(--card);border:1px solid var(--border);border-radius:12px;font-size:.7rem;color:var(--text-muted)}
@@ -220,7 +220,7 @@ tr:hover{background:rgba(124,92,252,.04)}
             <span>📍 Cidades e Bairros Ativos <span style="color:var(--accent)" id="cidadesCount"></span></span>
             <span class="arrow">▼</span>
           </div>
-          <div class="active-list-box" id="cidadesContent" style="max-height:800px;padding:0 14px 14px">
+          <div class="active-list-box" id="cidadesContent" style="display:block">
             <div style="margin-bottom:10px;padding-top:8px">
               <label class="section-label" style="margin-bottom:8px;display:block">Cidades <span>(clique para ativar/desativar)</span></label>
               <div class="city-chips" id="cityChips" style="margin-bottom:10px">
