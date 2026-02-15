@@ -91,8 +91,15 @@ tr:hover{background:rgba(124,92,252,.04)}
 .wa-link{color:var(--green);text-decoration:none;font-weight:500}
 .wa-link:hover{text-decoration:underline}
 
-/* Active list boxes */
-.active-list-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow-y:auto}
+/* Active list boxes (collapsible) */
+.active-list-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.active-list-header{padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;transition:background .2s}
+.active-list-header:hover{background:rgba(147,51,234,.06)}
+.active-list-header span{font-size:.75rem;font-weight:600;color:var(--accent)}
+.active-list-header .arrow{font-size:.65rem;color:var(--text-muted);transition:transform .2s}
+.active-list-wrap.open .arrow{transform:rotate(180deg)}
+.active-list-box{padding:0 14px 14px;display:flex;flex-wrap:wrap;gap:6px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease}
+.active-list-wrap.open .active-list-box{max-height:300px;overflow-y:auto;padding:0 14px 14px}
 .active-list-box::-webkit-scrollbar{width:4px}
 .active-list-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 .info-tag{padding:3px 10px;background:var(--card);border:1px solid var(--border);border-radius:12px;font-size:.7rem;color:var(--text-muted)}
@@ -220,8 +227,13 @@ tr:hover{background:rgba(124,92,252,.04)}
         </div>
       </div>
       <div class="settings-section">
-        <label class="section-label">🏷️ Categorias Ativas <span>(<span id="catInfoCount">—</span> categorias)</span></label>
-        <div class="active-list-box" id="catInfo"></div>
+        <div class="active-list-wrap" id="catWrap">
+          <div class="active-list-header" onclick="toggleListBox('catWrap')">
+            <span>🏷️ Categorias Ativas (<span id="catInfoCount">—</span>)</span>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="active-list-box" id="catInfo"></div>
+        </div>
       </div>
     </div>
 
@@ -232,8 +244,13 @@ tr:hover{background:rgba(124,92,252,.04)}
         <button class="btn-save" onclick="saveSettings()">💾 Salvar Configurações</button>
       </div>
       <div class="settings-section">
-        <label class="section-label">🏘️ Bairros Ativos <span>(<span id="bairroInfoCount">—</span> bairros)</span></label>
-        <div class="active-list-box" id="bairroInfo"></div>
+        <div class="active-list-wrap" id="bairroWrap">
+          <div class="active-list-header" onclick="toggleListBox('bairroWrap')">
+            <span>🏘️ Bairros Ativos (<span id="bairroInfoCount">—</span>)</span>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="active-list-box" id="bairroInfo"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -425,6 +442,10 @@ async function loadSettings() {
     renderNeighborhoodChips();
     loadScraperInfo();
   } catch (e) { console.error('Erro ao carregar config:', e); }
+}
+
+function toggleListBox(id) {
+  document.getElementById(id).classList.toggle('open');
 }
 
 async function loadScraperInfo() {
