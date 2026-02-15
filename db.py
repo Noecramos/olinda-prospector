@@ -72,6 +72,9 @@ async def init_db(pool: asyncpg.Pool) -> None:
             await conn.execute("""
                 ALTER TABLE leads_olinda ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ;
             """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_leads_sent_at ON leads_olinda (sent_at);
+            """)
             logger.info("Ensured sent_at column exists")
     except Exception as exc:
         logger.warning("sent_at migration error: %s", exc)
