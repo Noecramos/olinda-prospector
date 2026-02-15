@@ -510,11 +510,16 @@ async function loadData() {
   const category = document.getElementById('filterCategory').value;
   const neighborhood = document.getElementById('filterNeighborhood').value;
   const params = new URLSearchParams();
+  
+  console.log('loadData called - mode:', mode, 'status:', status);
+  
   if (mode) params.set('target_saas', mode);
   if (whatsAppOnly) params.set('has_whatsapp', '1');
   if (status) params.set('status', status);
   if (category) params.set('category', category);
   if (neighborhood) params.set('neighborhood', neighborhood);
+
+  console.log('API params:', params.toString());
 
   const exportParams = new URLSearchParams(params);
   document.getElementById('exportBtn').href = '/api/export/csv?' + exportParams.toString();
