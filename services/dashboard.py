@@ -888,7 +888,7 @@ async def _handle_export_csv(request: web.Request) -> web.Response:
     )
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"olinda_leads_{timestamp}.csv"
+    filename = f"leads_{timestamp}.csv"
 
     return web.Response(
         body=csv_content,

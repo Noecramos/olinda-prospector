@@ -1,6 +1,6 @@
 """
-Async Google Maps scraper using Playwright (Chromium headless).
-Searches for business categories in Olinda, PE and extracts lead data
++Leads — Google Maps scraper engine.
+Searches for business categories across configured cities and extracts lead data
 including WhatsApp numbers.
 
 Supports proxy rotation via the ProxyRotator module.

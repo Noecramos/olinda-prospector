@@ -1,5 +1,5 @@
 """
-Olinda Prospector — Main entry point.
++Leads — Main entry point.
 
 Uses APScheduler for cron-like scheduling instead of a simple sleep loop.
 Runs the dashboard web UI concurrently with the scraping/dispatch jobs.
@@ -38,7 +38,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
-logger = logging.getLogger("olinda-prospector")
+logger = logging.getLogger("+leads")
 
 # Mute noisy loggers
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
@@ -95,7 +95,7 @@ async def main() -> None:
     _runtime_settings["mode"] = settings.mode
     _runtime_settings["scrape_cities"] = settings.scrape_cities
 
-    logger.info("Starting Olinda Prospector (%s mode)", settings.mode.upper())
+    logger.info("Starting +Leads (%s mode)", settings.mode.upper())
     logger.info("  Mode     : %s", settings.mode.upper())
     logger.info("  Database   : %s", settings.database_url.split("@")[-1] if "@" in settings.database_url else "***")
     logger.info("  Webhook    : %s", settings.n8n_webhook_url[:40] + "..." if settings.n8n_webhook_url else "(not set)")
