@@ -185,7 +185,6 @@ tr:hover{background:rgba(124,92,252,.04)}
 /* Responsive */
 @media(max-width:1024px){
   .stats{grid-template-columns:repeat(3,1fr)}
-  .funnel-steps{flex-wrap:wrap}
   .filters{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:768px){
@@ -200,15 +199,26 @@ tr:hover{background:rgba(124,92,252,.04)}
   .filters{grid-template-columns:1fr 1fr}
   td,th{padding:8px 10px;font-size:.75rem}
   .add-row{flex-direction:column;align-items:stretch}
+  /* Funnel: vertical stack */
+  .funnel-steps{flex-direction:column;gap:12px}
+  .funnel-step{width:100%}
+  .funnel-bar{height:36px;border-radius:8px!important;justify-content:flex-start;padding-left:16px;font-size:.8rem}
+  .funnel-step:nth-child(1) .funnel-bar{width:100%!important}
+  .funnel-step:nth-child(2) .funnel-bar{width:75%!important}
+  .funnel-step:nth-child(3) .funnel-bar{width:50%!important}
+  .funnel-step:nth-child(4) .funnel-bar{width:35%!important}
+  .funnel-label{text-align:left;font-size:.65rem}
+  .funnel-pct{text-align:left;font-size:.6rem}
 }
 @media(max-width:480px){
-  .stats{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
   .filters{grid-template-columns:1fr}
   .header-actions{flex-direction:column;gap:8px}
   .header-actions .btn{width:100%;justify-content:center}
   h1{font-size:1.3rem}
   .city-chips{gap:6px}
   .city-chip{padding:6px 12px;font-size:.75rem}
+  .stat-value{font-size:1.3rem}
 }
 </style>
 </head>
