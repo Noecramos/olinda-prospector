@@ -24,6 +24,7 @@ class Settings:
     waha_session: str = "default"
     waha_enabled: bool = False
     message_delay: float = 3.0        # seconds between WhatsApp messages
+    scrape_cities: list[str] = field(default_factory=list)  # which cities to scrape (empty = all)
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -52,6 +53,10 @@ class Settings:
         waha_enabled = bool(waha_api_url)
         message_delay = float(os.getenv("MESSAGE_DELAY", "3.0"))
 
+        # Cities to scrape (comma-separated, empty = all)
+        raw_cities = os.getenv("SCRAPE_CITIES", "")
+        scrape_cities = [c.strip() for c in raw_cities.split(",") if c.strip()]
+
         return cls(
             database_url=database_url,
             n8n_webhook_url=n8n_webhook_url,
@@ -65,4 +70,5 @@ class Settings:
             waha_session=waha_session,
             waha_enabled=waha_enabled,
             message_delay=message_delay,
+            scrape_cities=scrape_cities,
         )

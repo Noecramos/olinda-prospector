@@ -44,6 +44,7 @@ logger = logging.getLogger("olinda-prospector")
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 
+_runtime_settings = {"mode": "zappy", "scrape_cities": []}
 _cycle_counter = 0
 
 
@@ -51,11 +52,21 @@ async def _run_cycle(pool, settings: Settings, proxy_rotator: ProxyRotator, waha
     """One full scrape → dispatch cycle."""
     global _cycle_counter
     _cycle_counter += 1
-    logger.info("═══ Cycle %d ═══", _cycle_counter)
+    
+    mode = _runtime_settings.get("mode", settings.mode)
+    cities = _runtime_settings.get("scrape_cities", settings.scrape_cities)
+    custom_cats = _runtime_settings.get("custom_categories", [])
+    custom_neighs = _runtime_settings.get("custom_neighborhoods", [])
+    logger.info("═══ Cycle %d ═══ (mode=%s, cities=%s)", _cycle_counter, mode, cities or "all")
 
     # --- Scrape ---
     try:
-        new_leads = await run_scraper(pool, proxy_rotator, mode=settings.mode)
+        new_leads = await run_scraper(
+            pool, proxy_rotator, mode=mode,
+            scrape_cities=cities,
+            custom_categories=custom_cats,
+            custom_neighborhoods=custom_neighs,
+        )
         logger.info("Scraper returned %d new leads", new_leads)
     except Exception as exc:
         logger.error("Scraper error: %s", exc, exc_info=True)
@@ -77,6 +88,10 @@ async def _run_cycle(pool, settings: Settings, proxy_rotator: ProxyRotator, waha
 async def main() -> None:
     load_dotenv()
     settings = Settings.from_env()
+
+    # Initialize runtime settings from env
+    _runtime_settings["mode"] = settings.mode
+    _runtime_settings["scrape_cities"] = settings.scrape_cities
 
     logger.info("Starting Olinda Prospector (%s mode)", settings.mode.upper())
     logger.info("  Mode     : %s", settings.mode.upper())
@@ -136,7 +151,7 @@ async def main() -> None:
     asyncio.create_task(_run_cycle(pool, settings, proxy_rotator, waha))
 
     # ── Dashboard Web Server ──
-    dashboard_app = create_dashboard_app(pool, mode=settings.mode)
+    dashboard_app = create_dashboard_app(pool, runtime_settings=_runtime_settings)
     runner = web.AppRunner(dashboard_app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", settings.dashboard_port)

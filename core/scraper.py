@@ -38,6 +38,7 @@ ZAPPY_CATEGORIES = [
     "Sorveterias",
     # Brazilian specialties
     "Açaí",
+    "Açaiteria",
     "Churrascarias",
     "Tapiocarias",
     "Pastelarias",
@@ -78,10 +79,92 @@ ZAPPY_CATEGORIES = [
     "Comida vegana",
     "Comida vegetariana",
     "Comida fit",
-    "Açaiteria",
     "Gelateria",
     "Casa de bolos",
     "Depósito de bebidas",
+    # Extra food categories
+    "Rotisseria",
+    "Casa de carnes",
+    "Frangos e assados",
+    "Poke",
+    "Temakeria",
+    "Yakisoba",
+    "Pastelaria",
+    "Coxinharia",
+    "Empadas e salgados",
+    "Churros",
+    "Waffle",
+    "Panquecaria",
+    "Forneria",
+    "Esfiharia",
+    "Comida baiana",
+    "Comida mineira",
+    "Comida goiana",
+    "Comida peruana",
+    "Comida portuguesa",
+    "Restaurante popular",
+    "Cantina",
+    "Bistrô",
+    "Gastropub",
+    "Hamburgueria artesanal",
+    "Pizza delivery",
+    "Pizzaria delivery",
+    "Lanchonete delivery",
+    "Restaurante delivery",
+    "Sushi delivery",
+    "Açaí delivery",
+    "Marmita fitness",
+    "Comida congelada",
+    "Alimentos congelados",
+    "Café da manhã",
+    "Brunch",
+    "Casa de chá",
+    "Cafeteria",
+    "Loja de doces",
+    "Bomboniere",
+    "Chocolate artesanal",
+    "Brownie",
+    "Bolo no pote",
+    "Bolo de rolo",
+    "Tortas e bolos",
+    "Salgados para festa",
+    "Buffet infantil",
+    "Buffet de festas",
+    "Catering",
+    "Loja de açaí",
+    "Frozen yogurt",
+    "Picolé artesanal",
+    "Paleta mexicana",
+    "Espetaria",
+    "Churrasco",
+    "Costela no bafo",
+    "Picanha",
+    "Frutos do mar",
+    "Restaurante de peixe",
+    "Tacos",
+    "Burrito",
+    "Kebab",
+    "Shawarma",
+    "Falafel",
+    "Fish and chips",
+    "Batata recheada",
+    "Sanduícheria",
+    "Wrap",
+    "Saladas",
+    "Comida orgânica",
+    "Alimentos naturais",
+    "Sucos naturais",
+    "Smoothie",
+    "Milkshake",
+    "Bubble tea",
+    "Água de coco",
+    "Bar de drinks",
+    "Cocktailbar",
+    "Wine bar",
+    "Pub",
+    "Choperia",
+    "Adega",
+    "Distribuidora de gás",
 ]
 
 LOJAKY_CATEGORIES = [
@@ -91,28 +174,61 @@ LOJAKY_CATEGORIES = [
     "Moda masculina",
     "Moda infantil",
     "Moda praia",
+    "Moda plus size",
+    "Moda evangélica",
+    "Moda fitness",
     "Lojas de calçados",
     "Boutique",
+    "Brechó",
     "Loja de lingerie",
     "Loja de bolsas",
     "Loja de bijuterias",
     "Loja de acessórios",
     "Loja de tecidos",
+    "Loja de uniformes",
+    "Camisetas personalizadas",
+    "Ateliê de costura",
+    "Sapataria",
+    "Loja de chapéus",
+    # Jewelry / Joalheria
+    "Joalheria",
+    "Relojoaria",
+    "Loja de semi joias",
+    "Loja de prata",
+    "Ótica e relojoaria",
     # Beauty / Beleza
     "Salões de beleza",
     "Salão de cabelo",
     "Barbearias",
+    "Barbearia premium",
     "Manicure e pedicure",
     "Clínica de estética",
     "Estúdio de tatuagem",
     "Design de sobrancelhas",
     "Lojas de cosméticos",
     "Perfumaria",
+    "Loja de perfumes importados",
+    "Loja de maquiagem",
+    "Extensão de cílios",
+    "Micropigmentação",
+    "Depilação a laser",
+    "Spa",
+    "Loja de produtos de beleza",
+    "Loja de cabelos",
+    "Perucas e apliques",
+    "Nail designer",
+    "Loja de esmaltes",
+    "Produtos naturais",
+    "Loja de produtos naturais",
+    "Loja de suplementos",
+    "Empório natural",
     # Pet
     "Pet shops",
     "Banho e tosa",
     "Clínica veterinária",
     "Pet shop e veterinária",
+    "Acessórios para pets",
+    "Ração e alimentos para pets",
     # Health / Saúde
     "Farmácias",
     "Drogarias",
@@ -121,12 +237,23 @@ LOJAKY_CATEGORIES = [
     "Consultório médico",
     "Clínica de fisioterapia",
     "Laboratório de análises",
+    "Clínica dermatológica",
+    "Nutricionista",
+    "Psicólogo",
+    "Fonoaudiólogo",
+    "Loja de produtos ortopédicos",
+    "Loja de equipamentos médicos",
+    "Farmácia de manipulação",
     # Fitness
     "Academias",
     "Studio de pilates",
     "Crossfit",
     "Escola de dança",
     "Escola de luta",
+    "Yoga",
+    "Personal trainer",
+    "Loja de artigos esportivos",
+    "Loja de suplementos esportivos",
     # Grocery / Mercados
     "Supermercado",
     "Mercadinho",
@@ -135,6 +262,10 @@ LOJAKY_CATEGORIES = [
     "Loja de conveniência",
     "Hortifruti",
     "Atacadão",
+    "Atacado e varejo",
+    "Empório",
+    "Casa de frios",
+    "Loja de temperos",
     # Home / Casa
     "Loja de móveis",
     "Loja de material de construção",
@@ -145,11 +276,40 @@ LOJAKY_CATEGORIES = [
     "Vidraçaria",
     "Serralheria",
     "Marcenaria",
+    "Loja de cortinas",
+    "Loja de pisos e revestimentos",
+    "Loja de iluminação",
+    "Loja de ferramentas",
+    "Casa e jardim",
+    "Loja de utilidades domésticas",
+    "Loja de cama mesa e banho",
+    "Tapetes e carpetes",
+    "Persianas e cortinas",
+    "Loja de ar condicionado",
     # Tech / Eletrônicos
     "Loja de celulares",
+    "Celulares e acessórios",
     "Assistência técnica celular",
+    "Conserto de celular",
+    "Loja de capinhas",
     "Loja de eletrônicos",
     "Loja de informática",
+    "Assistência técnica notebook",
+    "Loja de games",
+    "Loja de drones",
+    "Loja de som",
+    "Loja de TVs",
+    # Security / Segurança
+    "CFTV e câmeras",
+    "Alarmes e segurança",
+    "Cercas elétricas",
+    "Portões automáticos",
+    # Electrical / Elétrica
+    "Materiais elétricos",
+    "Loja de materiais hidráulicos",
+    "Energia solar",
+    "Eletricista",
+    "Encanador",
     # Auto
     "Autopeças",
     "Oficina mecânica",
@@ -157,6 +317,14 @@ LOJAKY_CATEGORIES = [
     "Borracharia",
     "Auto elétrica",
     "Funilaria e pintura",
+    "Motopeças",
+    "Bicicletaria",
+    "Som automotivo",
+    "Insulfilm",
+    "Pneus",
+    "Estacionamento",
+    "Acessórios automotivos",
+    "Loja de baterias",
     # Retail misc
     "Lojas de varejo",
     "Papelarias",
@@ -165,6 +333,21 @@ LOJAKY_CATEGORIES = [
     "Loja de presentes",
     "Armarinho",
     "Loja de embalagens",
+    "Livraria",
+    "Loja de artigos religiosos",
+    "Loja de artigos para festas",
+    "Casa de festas",
+    "Aluguel de trajes",
+    "Loja de malas e bolsas",
+    "Tabacaria",
+    "Sex shop",
+    "Loja de pesca",
+    "Loja de camping",
+    "Loja de artigos militares",
+    "Loja de instrumentos musicais",
+    "Loja de artesanato",
+    "Loja de quadros e molduras",
+    "Antiquário",
     # Services / Serviços
     "Lavanderia",
     "Chaveiro",
@@ -175,6 +358,24 @@ LOJAKY_CATEGORIES = [
     "Escola de idiomas",
     "Auto escola",
     "Coworking",
+    "Fotógrafo",
+    "Estúdio fotográfico",
+    "Dedetizadora",
+    "Limpeza e conservação",
+    "Caçamba e entulho",
+    "Mudanças e fretes",
+    "Corretor de seguros",
+    "Despachante",
+    "Escritório de advocacia",
+    "Consultoria empresarial",
+    "Marketing digital",
+    "Agência de publicidade",
+    "Web design",
+    "Escola de cursos profissionalizantes",
+    "Escola de informática",
+    "Escola particular",
+    "Creche",
+    "Clínica de reforço escolar",
 ]
 
 SEARCH_LOCATION = "Olinda, PE"
@@ -426,12 +627,36 @@ async def _scrape_category(
             addr_el = await page.query_selector('button[data-item-id="address"] div.fontBodyMedium')
             if addr_el:
                 addr_text = await addr_el.inner_text()
-                # Try to pull the neighbourhood from the address
+                # Brazilian addresses: "Rua X, 123 - Bairro, Cidade - UF, CEP"
+                # or: "Rua X, Bairro, Olinda - PE, 53020-140"
+                # We need to extract the bairro (neighborhood) name
+                import re
                 parts = [p.strip() for p in addr_text.split(",")]
-                if len(parts) >= 2:
-                    neighborhood = parts[-2]  # second-to-last is often the neighbourhood
-                else:
-                    neighborhood = parts[0]
+                neighborhood = None
+                for part in parts:
+                    # Skip CEPs (5 digits, dash, 3 digits)
+                    if re.match(r'^\d{5}-?\d{3}$', part.strip()):
+                        continue
+                    # Skip parts with state abbreviation (Cidade - UF)
+                    if re.search(r'\s*-\s*[A-Z]{2}$', part.strip()):
+                        continue
+                    # Skip street numbers only
+                    if re.match(r'^\d+$', part.strip()):
+                        continue
+                    # Skip parts starting with common street prefixes
+                    lower = part.strip().lower()
+                    if any(lower.startswith(p) for p in ['r.', 'rua ', 'av.', 'av ', 'rod.', 'rod ', 
+                            'travessa', 'tv.', 'estrada', 'alameda', 'al.', 'praça', 'pç.']):
+                        continue
+                    # Check for "123 - Bairro" pattern (number dash name)
+                    dash_match = re.match(r'^\d+\s*-\s*(.+)$', part.strip())
+                    if dash_match:
+                        neighborhood = dash_match.group(1).strip()
+                        break
+                    # Otherwise this part might be the bairro
+                    if len(part.strip()) > 2 and not part.strip().isdigit():
+                        neighborhood = part.strip()
+                        # Don't break - keep looking for a better match (after dash)
 
             # Extract ONLY the business's own phone number (not reviews/ads)
             # Strategy: use the phone button in the contact info section
@@ -503,11 +728,21 @@ async def _scrape_category(
     return inserted
 
 
-async def run_scraper(pool: asyncpg.Pool, proxy_rotator: ProxyRotator | None = None, mode: str = "zappy") -> int:
+async def run_scraper(
+    pool: asyncpg.Pool,
+    proxy_rotator: ProxyRotator | None = None,
+    mode: str = "zappy",
+    scrape_cities: list[str] | None = None,
+    custom_categories: list[str] | None = None,
+    custom_neighborhoods: list[str] | None = None,
+) -> int:
     """
     Main entry point for the scraper.
     Launches Playwright, iterates over search categories, and returns total inserts.
     Mode selects which categories to scrape: 'zappy' (food) or 'lojaky' (retail).
+    scrape_cities filters which cities to scrape (empty/None = all).
+    custom_categories: extra categories added from dashboard.
+    custom_neighborhoods: extra neighborhoods added from dashboard.
     """
     total_inserted = 0
 
@@ -541,20 +776,47 @@ async def run_scraper(pool: asyncpg.Pool, proxy_rotator: ProxyRotator | None = N
         )
         page = await context.new_page()
 
-        categories = ZAPPY_CATEGORIES if mode == "zappy" else LOJAKY_CATEGORIES
+        categories = list(ZAPPY_CATEGORIES if mode == "zappy" else LOJAKY_CATEGORIES)
         target_saas = _classify_target_saas(mode)
 
-        # Build search locations: city-wide + each neighbourhood for ALL cities
+        # Add custom categories from dashboard
+        if custom_categories:
+            for cc in custom_categories:
+                if cc.strip() and cc.strip() not in categories:
+                    categories.append(cc.strip())
+
+        # Filter cities if specified
+        cities_to_scrape = dict(CITY_LOCATIONS)
+        if scrape_cities:
+            cities_to_scrape = {
+                city: list(neighborhoods)
+                for city, neighborhoods in CITY_LOCATIONS.items()
+                if any(sc.lower() in city.lower() for sc in scrape_cities)
+            }
+            if not cities_to_scrape:
+                logger.warning("No matching cities found for: %s", scrape_cities)
+                cities_to_scrape = dict(CITY_LOCATIONS)
+
+        # Add custom neighborhoods to each active city
+        if custom_neighborhoods:
+            for city in cities_to_scrape:
+                for cn in custom_neighborhoods:
+                    cn = cn.strip()
+                    if cn and cn not in cities_to_scrape[city]:
+                        cities_to_scrape[city].append(cn)
+
+        # Build search locations: city-wide + each neighbourhood
         locations = []
-        for city, neighborhoods in CITY_LOCATIONS.items():
+        for city, neighborhoods in cities_to_scrape.items():
             locations.append(city)  # City-wide search
             for n in neighborhoods:
                 locations.append(f"{n}, {city}")
         
         total_queries = len(categories) * len(locations)
+        city_names = list(cities_to_scrape.keys())
         logger.info(
-            "Mode: %s — %d categories × %d locations (%d cities) = %d queries",
-            mode, len(categories), len(locations), len(CITY_LOCATIONS), total_queries,
+            "Mode: %s — %d categories × %d locations (%s) = %d queries",
+            mode, len(categories), len(locations), ", ".join(city_names), total_queries,
         )
 
         query_num = 0

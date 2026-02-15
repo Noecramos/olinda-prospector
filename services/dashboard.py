@@ -91,6 +91,21 @@ tr:hover{background:rgba(124,92,252,.04)}
 .wa-link{color:var(--green);text-decoration:none;font-weight:500}
 .wa-link:hover{text-decoration:underline}
 
+/* Settings Panel */
+.settings-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:24px;animation:fadeUp .3s ease-out both}
+.settings-panel h2{font-size:.9rem;font-weight:600;margin-bottom:16px;color:var(--text);display:flex;align-items:center;gap:8px}
+.settings-panel h2 span{color:var(--text-muted);font-weight:400;font-size:.75rem}
+.settings-row{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end}
+.settings-row .filter-group{min-width:160px}
+.city-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.city-chip{padding:6px 14px;border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text-muted);font-size:.78rem;cursor:pointer;transition:all .2s;user-select:none}
+.city-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(147,51,234,.12);box-shadow:0 0 10px rgba(147,51,234,.15)}
+.city-chip:hover{border-color:var(--accent)}
+.btn-save{padding:8px 20px;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s}
+.btn-save:hover{opacity:.85}
+.settings-status{font-size:.75rem;color:var(--green);margin-left:12px;opacity:0;transition:opacity .3s}
+.settings-status.show{opacity:1}
+
 /* Footer */
 .footer{text-align:center;padding:32px 0 16px;color:var(--text-muted);font-size:.75rem}
 
@@ -122,6 +137,48 @@ tr:hover{background:rgba(124,92,252,.04)}
       <button class="btn btn-primary" onclick="loadData()">&#8635; Atualizar</button>
     </div>
   </header>
+
+  <div class="settings-panel" id="settingsPanel">
+    <h2>⚙️ Configurações do Scraper <span id="settingsStatus" class="settings-status">✓ Salvo!</span></h2>
+    <div class="settings-row">
+      <div class="filter-group">
+        <label>Modo do Scraper</label>
+        <select id="scraperMode">
+          <option value="zappy">🍔 Zappy (Alimentação)</option>
+          <option value="lojaky">🛒 Lojaky (Comércio)</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>&nbsp;</label>
+        <button class="btn-save" onclick="saveSettings()">💾 Salvar Configurações</button>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <label style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Cidades Ativas <span style="font-weight:400">(clique para ativar/desativar)</span></label>
+      <div class="city-chips" id="cityChips">
+        <div class="city-chip active" data-city="Olinda, PE" onclick="toggleCity(this)">📍 Olinda</div>
+        <div class="city-chip active" data-city="Camaragibe, PE" onclick="toggleCity(this)">📍 Camaragibe</div>
+        <div class="city-chip active" data-city="Várzea, Recife, PE" onclick="toggleCity(this)">📍 Várzea (Recife)</div>
+        <div class="city-chip active" data-city="São Lourenço da Mata, PE" onclick="toggleCity(this)">📍 São Lourenço da Mata</div>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <label style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Bairros Extras <span style="font-weight:400">(adicionados a todas as cidades ativas)</span></label>
+      <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+        <input type="text" id="newNeighborhood" placeholder="Nome do bairro..." style="min-width:200px" onkeydown="if(event.key==='Enter'){addNeighborhood()}">
+        <button class="btn" onclick="addNeighborhood()" style="padding:6px 12px">+ Adicionar</button>
+      </div>
+      <div class="city-chips" id="neighborhoodChips" style="margin-top:8px"></div>
+    </div>
+    <div style="margin-top:14px">
+      <label style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Categorias Extras <span style="font-weight:400">(além das padrão do modo selecionado)</span></label>
+      <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+        <input type="text" id="newCategory" placeholder="Nome da categoria..." style="min-width:200px" onkeydown="if(event.key==='Enter'){addCategory()}">
+        <button class="btn" onclick="addCategory()" style="padding:6px 12px">+ Adicionar</button>
+      </div>
+      <div class="city-chips" id="categoryChips" style="margin-top:8px"></div>
+    </div>
+  </div>
 
   <div class="stats" id="statsRow">
     <div class="stat-card total"><div class="stat-label">Total de Leads</div><div class="stat-value" id="statTotal">&mdash;</div></div>
@@ -210,6 +267,100 @@ function toggleWhatsApp() {
   loadData();
 }
 
+function toggleCity(el) {
+  el.classList.toggle('active');
+}
+
+let customCategories = [];
+let customNeighborhoods = [];
+
+function addCategory() {
+  const input = document.getElementById('newCategory');
+  const val = input.value.trim();
+  if (!val) return;
+  if (customCategories.includes(val)) { input.value = ''; return; }
+  customCategories.push(val);
+  input.value = '';
+  renderCategoryChips();
+}
+
+function removeCategory(idx) {
+  customCategories.splice(idx, 1);
+  renderCategoryChips();
+}
+
+function renderCategoryChips() {
+  const container = document.getElementById('categoryChips');
+  container.innerHTML = customCategories.map(function(c, i) {
+    return '<div class="city-chip active" style="padding-right:8px">' + escHtml(c) + ' <span onclick="removeCategory(' + i + ')" style="cursor:pointer;margin-left:4px;color:var(--red)">&times;</span></div>';
+  }).join('');
+}
+
+function addNeighborhood() {
+  const input = document.getElementById('newNeighborhood');
+  const val = input.value.trim();
+  if (!val) return;
+  if (customNeighborhoods.includes(val)) { input.value = ''; return; }
+  customNeighborhoods.push(val);
+  input.value = '';
+  renderNeighborhoodChips();
+}
+
+function removeNeighborhood(idx) {
+  customNeighborhoods.splice(idx, 1);
+  renderNeighborhoodChips();
+}
+
+function renderNeighborhoodChips() {
+  const container = document.getElementById('neighborhoodChips');
+  container.innerHTML = customNeighborhoods.map(function(n, i) {
+    return '<div class="city-chip active" style="padding-right:8px">' + escHtml(n) + ' <span onclick="removeNeighborhood(' + i + ')" style="cursor:pointer;margin-left:4px;color:var(--red)">&times;</span></div>';
+  }).join('');
+}
+
+async function loadSettings() {
+  try {
+    const res = await fetch('/api/settings');
+    const data = await res.json();
+    document.getElementById('scraperMode').value = data.mode || 'zappy';
+    const cities = data.scrape_cities || [];
+    const chips = document.querySelectorAll('#cityChips .city-chip');
+    if (cities.length > 0) {
+      chips.forEach(function(chip) {
+        const city = chip.dataset.city;
+        const isActive = cities.some(function(c) { return city.toLowerCase().includes(c.toLowerCase()); });
+        chip.classList.toggle('active', isActive);
+      });
+    }
+    customCategories = data.custom_categories || [];
+    customNeighborhoods = data.custom_neighborhoods || [];
+    renderCategoryChips();
+    renderNeighborhoodChips();
+  } catch (e) { console.error('Erro ao carregar config:', e); }
+}
+
+async function saveSettings() {
+  const mode = document.getElementById('scraperMode').value;
+  const chips = document.querySelectorAll('#cityChips .city-chip.active');
+  const cities = [];
+  chips.forEach(function(chip) { cities.push(chip.dataset.city); });
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        mode: mode,
+        scrape_cities: cities,
+        custom_categories: customCategories,
+        custom_neighborhoods: customNeighborhoods
+      })
+    });
+    const status = document.getElementById('settingsStatus');
+    status.classList.add('show');
+    setTimeout(function() { status.classList.remove('show'); }, 2500);
+  } catch (e) { alert('Erro ao salvar: ' + e.message); }
+}
+
 async function loadData() {
   const mode = getSelectedMode();
   const status = document.getElementById('filterStatus').value;
@@ -244,7 +395,7 @@ async function loadData() {
     populateCategoryFilter(statsData.categories || []);
     populateNeighborhoodFilter(statsData.neighborhoods || []);
   } catch (e) {
-    console.error('Failed to load data:', e);
+    console.error('Erro ao carregar dados:', e);
   }
 }
 
@@ -287,6 +438,7 @@ function renderTable(leads) {
   }
   tbody.innerHTML = leads.map(function(l) {
     const statusClass = l.status === 'Pending' ? 'badge-pending' : 'badge-sent';
+    const statusLabel = l.status === 'Pending' ? 'Pendente' : 'Enviado';
     const waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
     const waLink = l.whatsapp ? 'https://wa.me/' + l.whatsapp : '#';
     const rating = l.google_rating ? '<span class="rating">\u2605 ' + l.google_rating.toFixed(1) + '</span>' : '\u2014';
@@ -298,7 +450,7 @@ function renderTable(leads) {
       + '<td>' + escHtml(l.neighborhood || '\u2014') + '</td>'
       + '<td>' + escHtml(l.category || '\u2014') + '</td>'
       + '<td>' + rating + '</td>'
-      + '<td><span class="badge ' + statusClass + '">' + l.status + '</span></td>'
+      + '<td><span class="badge ' + statusClass + '">' + statusLabel + '</span></td>'
       + '<td>' + date + '</td>'
       + '</tr>';
   }).join('');
@@ -324,6 +476,7 @@ async function clearAll() {
   } catch (e) { alert('Erro: ' + e.message); }
 }
 
+loadSettings();
 loadData();
 setInterval(loadData, 30000);
 </script>
@@ -474,18 +627,70 @@ async def _handle_clear_leads(request: web.Request) -> web.Response:
     return web.json_response({"deleted": count})
 
 
-def create_dashboard_app(pool: asyncpg.Pool, mode: str = "zappy") -> web.Application:
+async def _handle_get_settings(request: web.Request) -> web.Response:
+    rs = request.app.get("runtime_settings", {})
+    return web.json_response({
+        "mode": rs.get("mode", "zappy"),
+        "scrape_cities": rs.get("scrape_cities", []),
+        "custom_categories": rs.get("custom_categories", []),
+        "custom_neighborhoods": rs.get("custom_neighborhoods", []),
+    })
+
+
+async def _handle_post_settings(request: web.Request) -> web.Response:
+    rs = request.app.get("runtime_settings")
+    if rs is None:
+        return web.json_response({"error": "Runtime settings not available"}, status=500)
+
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+
+    mode = data.get("mode", "").lower().strip()
+    if mode in ("zappy", "lojaky"):
+        rs["mode"] = mode
+
+    cities = data.get("scrape_cities")
+    if isinstance(cities, list):
+        rs["scrape_cities"] = [c.strip() for c in cities if c.strip()]
+
+    cats = data.get("custom_categories")
+    if isinstance(cats, list):
+        rs["custom_categories"] = [c.strip() for c in cats if c.strip()]
+
+    neighs = data.get("custom_neighborhoods")
+    if isinstance(neighs, list):
+        rs["custom_neighborhoods"] = [n.strip() for n in neighs if n.strip()]
+
+    logger.info(
+        "Settings updated via dashboard: mode=%s, cities=%s, +%d cats, +%d neighs",
+        rs.get("mode"), rs.get("scrape_cities"),
+        len(rs.get("custom_categories", [])), len(rs.get("custom_neighborhoods", [])),
+    )
+    return web.json_response({
+        "ok": True,
+        "mode": rs["mode"],
+        "scrape_cities": rs.get("scrape_cities", []),
+        "custom_categories": rs.get("custom_categories", []),
+        "custom_neighborhoods": rs.get("custom_neighborhoods", []),
+    })
+
+
+def create_dashboard_app(pool: asyncpg.Pool, runtime_settings: dict | None = None, **kwargs) -> web.Application:
     """Create and return the dashboard aiohttp Application."""
     import os
     app = web.Application()
     app["db_pool"] = pool
-    app["mode"] = mode
+    app["runtime_settings"] = runtime_settings or {}
 
     app.router.add_get("/", _handle_index)
     app.router.add_get("/api/leads", _handle_api_leads)
     app.router.add_get("/api/stats", _handle_api_stats)
     app.router.add_get("/api/export/csv", _handle_export_csv)
     app.router.add_delete("/api/leads/clear", _handle_clear_leads)
+    app.router.add_get("/api/settings", _handle_get_settings)
+    app.router.add_post("/api/settings", _handle_post_settings)
 
     # Serve static files (logo, favicon)
     static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
@@ -493,3 +698,4 @@ def create_dashboard_app(pool: asyncpg.Pool, mode: str = "zappy") -> web.Applica
         app.router.add_static("/static/", static_dir, name="static")
 
     return app
+
