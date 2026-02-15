@@ -77,12 +77,19 @@ h1 span{font-weight:300;opacity:.7}
 select,input[type="text"]{padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:.85rem;width:100%;outline:none;transition:border-color .2s}
 select:focus,input:focus{border-color:var(--accent)}
 
-/* Table */
 .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow-x:auto}
-table{width:100%;border-collapse:collapse;table-layout:auto}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+colgroup .col-id{width:60px}
+colgroup .col-name{width:22%}
+colgroup .col-wa{width:14%}
+colgroup .col-bairro{width:12%}
+colgroup .col-cat{width:14%}
+colgroup .col-mode{width:8%}
+colgroup .col-status{width:10%}
+colgroup .col-date{width:10%}
 thead{background:var(--surface)}
 th{padding:12px 16px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:10px 16px;font-size:.8rem;border-bottom:1px solid var(--border);white-space:normal;word-break:break-word}
+td{padding:10px 16px;font-size:.8rem;border-bottom:1px solid var(--border);white-space:normal;word-break:break-word;line-height:1.4}
 td:first-child,td:nth-child(6),td:nth-child(7),td:nth-child(8){white-space:nowrap}
 tr:last-child td{border-bottom:none}
 tr:hover{background:rgba(124,92,252,.04)}
@@ -129,6 +136,14 @@ tr:hover{background:rgba(124,92,252,.04)}
 
 /* Footer */
 .footer{text-align:center;padding:32px 0 16px;color:var(--text-muted);font-size:.75rem}
+
+/* Toast notifications */
+.toast-container{position:fixed;top:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{padding:14px 22px;border-radius:12px;font-size:.85rem;font-weight:600;color:#fff;pointer-events:auto;transform:translateX(120%);opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.3);backdrop-filter:blur(8px)}
+.toast.show{transform:translateX(0);opacity:1}
+.toast.success{background:linear-gradient(135deg,rgba(34,197,94,.9),rgba(16,185,129,.9))}
+.toast.info{background:linear-gradient(135deg,rgba(124,92,252,.9),rgba(99,102,241,.9))}
+.toast.warning{background:linear-gradient(135deg,rgba(245,158,11,.9),rgba(249,115,22,.9))}
 
 /* Animations */
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -179,7 +194,7 @@ tr:hover{background:rgba(124,92,252,.04)}
     <div class="header-actions">
       <a class="btn" href="/api/export/csv" id="exportBtn">&#11015; Exportar CSV</a>
       <button class="btn" onclick="clearAll()" style="border-color:var(--red);color:var(--red)">&#128465; Limpar Tudo</button>
-      <button class="btn btn-primary" onclick="loadData()">&#8635; Atualizar</button>
+      <button class="btn btn-primary" onclick="loadData(true)">&#8635; Atualizar</button>
     </div>
   </header>
 
@@ -324,6 +339,10 @@ tr:hover{background:rgba(124,92,252,.04)}
 
   <div class="table-wrap">
     <table>
+      <colgroup>
+        <col class="col-id"><col class="col-name"><col class="col-wa"><col class="col-bairro">
+        <col class="col-cat"><col class="col-mode"><col class="col-status"><col class="col-date">
+      </colgroup>
       <thead>
         <tr>
           <th>#</th><th>Negócio</th><th>WhatsApp</th><th>Bairro</th>
@@ -335,6 +354,8 @@ tr:hover{background:rgba(124,92,252,.04)}
   </div>
 
   <div class="footer">+Leads &copy; 2026</div>
+
+  <div class="toast-container" id="toastContainer"></div>
 </div>
 
 <script>
@@ -626,6 +647,7 @@ async function saveSettings() {
     const status = document.getElementById('settingsStatus');
     status.classList.add('show');
     setTimeout(function() { status.classList.remove('show'); }, 2500);
+    showToast('✅ Configurações salvas com sucesso!', 'success');
 
     // Sync display filter and mode badge with new scraper mode
     updateModeBadge(mode);
@@ -634,10 +656,10 @@ async function saveSettings() {
     onModeChange();
 
     loadScraperInfo();
-  } catch (e) { alert('Erro ao salvar: ' + e.message); }
+  } catch (e) { showToast('❌ Erro ao salvar: ' + e.message, 'warning'); }
 }
 
-async function loadData() {
+async function loadData(manual) {
   const mode = getSelectedMode();
   const status = document.getElementById('filterStatus').value;
   const category = document.getElementById('filterCategory').value;
@@ -675,8 +697,10 @@ async function loadData() {
     renderTable(allLeads);
     populateCategoryFilter(statsData.categories || []);
     populateNeighborhoodFilter(statsData.neighborhoods || []);
+    if (manual) showToast('✅ ' + allLeads.length + ' leads carregados', 'success');
   } catch (e) {
     console.error('Erro ao carregar dados:', e);
+    if (manual) showToast('❌ Erro ao carregar dados', 'warning');
   }
 }
 
@@ -761,6 +785,25 @@ async function clearAll() {
     alert(data.deleted + ' leads apagados');
     loadData();
   } catch (e) { alert('Erro: ' + e.message); }
+}
+
+function showToast(message, type) {
+  type = type || 'info';
+  var container = document.getElementById('toastContainer');
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.innerHTML = message;
+  container.appendChild(toast);
+  // Trigger animation
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      toast.classList.add('show');
+    });
+  });
+  setTimeout(function() {
+    toast.classList.remove('show');
+    setTimeout(function() { toast.remove(); }, 400);
+  }, 3000);
 }
 
 loadSettings();
