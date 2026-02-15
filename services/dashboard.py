@@ -226,6 +226,7 @@ tr:hover{background:rgba(124,92,252,.04)}
           <input type="text" id="newCity" placeholder="Ex: Jaboatão, PE..." onkeydown="if(event.key==='Enter'){addCity()}">
           <button class="btn" onclick="addCity()" style="padding:8px 16px;white-space:nowrap">+ Adicionar</button>
         </div>
+        <div id="cityNeighborhoodsContainer" style="margin-top:16px"></div>
       </div>
       <div class="settings-section">
         <div class="active-list-wrap" id="catWrap">
@@ -360,9 +361,68 @@ function toggleWhatsApp() {
   loadData();
 }
 
+let cityNeighborhoodData = {};
+let disabledNeighborhoods = {};
+
 function toggleCity(el) {
   el.classList.toggle('active');
+  renderCityNeighborhoods();
   loadScraperInfo();
+}
+
+function toggleAllNeighborhoods(city, enable) {
+  const neighs = cityNeighborhoodData[city] || [];
+  if (enable) {
+    disabledNeighborhoods[city] = [];
+  } else {
+    disabledNeighborhoods[city] = neighs.slice();
+  }
+  renderCityNeighborhoods();
+  loadScraperInfo();
+}
+
+function toggleNeighborhoodChip(el) {
+  el.classList.toggle('active');
+  const city = el.dataset.city;
+  const neigh = el.dataset.neigh;
+  if (!disabledNeighborhoods[city]) disabledNeighborhoods[city] = [];
+  if (el.classList.contains('active')) {
+    disabledNeighborhoods[city] = disabledNeighborhoods[city].filter(function(n) { return n !== neigh; });
+  } else {
+    if (disabledNeighborhoods[city].indexOf(neigh) === -1) {
+      disabledNeighborhoods[city].push(neigh);
+    }
+  }
+  loadScraperInfo();
+}
+
+function renderCityNeighborhoods() {
+  const container = document.getElementById('cityNeighborhoodsContainer');
+  const activeChips = document.querySelectorAll('#cityChips .city-chip.active');
+  let html = '';
+  activeChips.forEach(function(chip) {
+    const city = chip.dataset.city;
+    const neighs = cityNeighborhoodData[city] || [];
+    if (neighs.length === 0) return;
+    const disabled = disabledNeighborhoods[city] || [];
+    const activeCount = neighs.length - disabled.length;
+    const allOn = disabled.length === 0;
+    html += '<div style="margin-bottom:14px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+    html += '<span style="font-size:.8rem;font-weight:600;color:var(--text-muted)">📍 ' + escHtml(city) + ' <span style="color:var(--accent)">(' + activeCount + '/' + neighs.length + ')</span></span>';
+    html += '<div style="display:flex;gap:6px">';
+    html += '<button class="btn" onclick="toggleAllNeighborhoods(\'' + escHtml(city).replace(/'/g, "\\'") + '\', true)" style="padding:3px 10px;font-size:.7rem">✅ Todos</button>';
+    html += '<button class="btn" onclick="toggleAllNeighborhoods(\'' + escHtml(city).replace(/'/g, "\\'") + '\', false)" style="padding:3px 10px;font-size:.7rem">❌ Nenhum</button>';
+    html += '</div></div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    neighs.forEach(function(n) {
+      const isActive = disabled.indexOf(n) === -1;
+      const cls = isActive ? 'city-chip active' : 'city-chip';
+      html += '<div class="' + cls + '" data-city="' + escHtml(city) + '" data-neigh="' + escHtml(n) + '" onclick="toggleNeighborhoodChip(this)" style="font-size:.72rem;padding:4px 10px">' + escHtml(n) + '</div>';
+    });
+    html += '</div></div>';
+  });
+  container.innerHTML = html || '<div style="color:var(--text-muted);font-size:.8rem;padding:8px">Nenhuma cidade ativa</div>';
 }
 
 function addCity() {
@@ -454,6 +514,9 @@ async function loadSettings() {
     filterModeEl.value = filterVal;
     onModeChange();
 
+    // Load disabled neighborhoods
+    disabledNeighborhoods = data.disabled_neighborhoods || {};
+
     const cities = data.scrape_cities || [];
     const chips = document.querySelectorAll('#cityChips .city-chip');
     if (cities.length > 0) {
@@ -485,6 +548,10 @@ async function loadScraperInfo() {
     const cats = data.categories || [];
     const neighs = data.neighborhoods || [];
 
+    // Store city neighborhoods for toggling
+    cityNeighborhoodData = data.city_neighborhoods || {};
+    renderCityNeighborhoods();
+
     // Merge local custom items that haven't been saved yet
     customCategories.forEach(function(c) {
       if (cats.indexOf(c) === -1) cats.push(c);
@@ -493,8 +560,18 @@ async function loadScraperInfo() {
       if (neighs.indexOf(n) === -1) neighs.push(n);
     });
 
+    // Count active neighborhoods (excluding disabled ones)
+    let totalNeighs = 0;
+    let activeNeighs = 0;
+    for (const city in cityNeighborhoodData) {
+      const cn = cityNeighborhoodData[city] || [];
+      const dn = disabledNeighborhoods[city] || [];
+      totalNeighs += cn.length;
+      activeNeighs += cn.length - dn.length;
+    }
+
     document.getElementById('catInfoCount').textContent = cats.length;
-    document.getElementById('bairroInfoCount').textContent = neighs.length;
+    document.getElementById('bairroInfoCount').textContent = activeNeighs + '/' + totalNeighs;
     catBox.innerHTML = cats.map(function(c) {
       return '<span class="info-tag">' + escHtml(c) + '</span>';
     }).join('');
@@ -521,7 +598,8 @@ async function saveSettings() {
         mode: mode,
         scrape_cities: cities,
         custom_categories: customCategories,
-        custom_neighborhoods: customNeighborhoods
+        custom_neighborhoods: customNeighborhoods,
+        disabled_neighborhoods: disabledNeighborhoods
       })
     });
     const status = document.getElementById('settingsStatus');
@@ -821,6 +899,7 @@ async def _handle_get_settings(request: web.Request) -> web.Response:
         "scrape_cities": rs.get("scrape_cities", []),
         "custom_categories": rs.get("custom_categories", []),
         "custom_neighborhoods": rs.get("custom_neighborhoods", []),
+        "disabled_neighborhoods": rs.get("disabled_neighborhoods", {}),
     })
 
 
@@ -850,6 +929,10 @@ async def _handle_post_settings(request: web.Request) -> web.Response:
     if isinstance(neighs, list):
         rs["custom_neighborhoods"] = [n.strip() for n in neighs if n.strip()]
 
+    disabled_n = data.get("disabled_neighborhoods")
+    if isinstance(disabled_n, dict):
+        rs["disabled_neighborhoods"] = disabled_n
+
     # Persist to database so settings survive restarts
     pool: asyncpg.Pool = request.app["db_pool"]
     settings_json = json.dumps({
@@ -857,6 +940,7 @@ async def _handle_post_settings(request: web.Request) -> web.Response:
         "scrape_cities": rs.get("scrape_cities", []),
         "custom_categories": rs.get("custom_categories", []),
         "custom_neighborhoods": rs.get("custom_neighborhoods", []),
+        "disabled_neighborhoods": rs.get("disabled_neighborhoods", {}),
     })
     try:
         async with pool.acquire() as conn:
@@ -869,9 +953,10 @@ async def _handle_post_settings(request: web.Request) -> web.Response:
         logger.warning("Failed to persist settings to DB: %s", exc)
 
     logger.info(
-        "Settings saved: mode=%s, cities=%s, +%d cats, +%d neighs",
+        "Settings saved: mode=%s, cities=%s, +%d cats, +%d neighs, %d cities with disabled bairros",
         rs.get("mode"), rs.get("scrape_cities"),
         len(rs.get("custom_categories", [])), len(rs.get("custom_neighborhoods", [])),
+        len([c for c, dn in rs.get("disabled_neighborhoods", {}).items() if dn]),
     )
     return web.json_response({
         "ok": True,
@@ -879,6 +964,7 @@ async def _handle_post_settings(request: web.Request) -> web.Response:
         "scrape_cities": rs.get("scrape_cities", []),
         "custom_categories": rs.get("custom_categories", []),
         "custom_neighborhoods": rs.get("custom_neighborhoods", []),
+        "disabled_neighborhoods": rs.get("disabled_neighborhoods", {}),
     })
 
 
@@ -893,7 +979,7 @@ async def _load_settings_from_db(app: web.Application) -> None:
             )
             if row:
                 saved = json.loads(row) if isinstance(row, str) else row
-                for k in ("mode", "scrape_cities", "custom_categories", "custom_neighborhoods"):
+                for k in ("mode", "scrape_cities", "custom_categories", "custom_neighborhoods", "disabled_neighborhoods"):
                     if k in saved:
                         rs[k] = saved[k]
                 logger.info("Loaded settings from DB: mode=%s, cities=%s", rs.get("mode"), rs.get("scrape_cities"))
@@ -942,10 +1028,14 @@ async def _handle_scraper_info(request: web.Request) -> web.Response:
         if cn.strip() and cn.strip() not in all_neighborhoods:
             all_neighborhoods.append(cn.strip())
 
+    # Build city_neighborhoods dict for dashboard toggling
+    city_neighborhoods = {city: list(neighs) for city, neighs in cities_to_use.items()}
+
     return web.json_response({
         "mode": mode,
         "categories": categories,
         "neighborhoods": all_neighborhoods,
+        "city_neighborhoods": city_neighborhoods,
     })
 
 

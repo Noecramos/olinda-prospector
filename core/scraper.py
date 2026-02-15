@@ -633,28 +633,38 @@ async def _scrape_category(
                 parts = [p.strip() for p in addr_text.split(",")]
                 neighborhood = None
                 for part in parts:
-                    # Skip CEPs (5 digits, dash, 3 digits)
-                    if re.match(r'^\d{5}-?\d{3}$', part.strip()):
+                    cleaned = part.strip()
+                    # Skip CEPs — many formats: 53020-140, 53.020-140, CEP 53020-140, etc.
+                    if re.match(r'^(?:CEP\s*)?\d{2}\.?\d{3}-?\d{3}$', cleaned, re.IGNORECASE):
+                        continue
+                    # Skip anything that is mostly digits (CEP fragments, house numbers)
+                    digits_only = re.sub(r'[\s\.\-]', '', cleaned)
+                    if digits_only.isdigit() and len(digits_only) >= 5:
                         continue
                     # Skip parts with state abbreviation (Cidade - UF)
-                    if re.search(r'\s*-\s*[A-Z]{2}$', part.strip()):
+                    if re.search(r'\s*-\s*[A-Z]{2}$', cleaned):
                         continue
                     # Skip street numbers only
-                    if re.match(r'^\d+$', part.strip()):
+                    if re.match(r'^\d+$', cleaned):
                         continue
                     # Skip parts starting with common street prefixes
-                    lower = part.strip().lower()
+                    lower = cleaned.lower()
                     if any(lower.startswith(p) for p in ['r.', 'rua ', 'av.', 'av ', 'rod.', 'rod ', 
-                            'travessa', 'tv.', 'estrada', 'alameda', 'al.', 'praça', 'pç.']):
+                            'travessa', 'tv.', 'estrada', 'alameda', 'al.', 'praça', 'pç.',
+                            'largo ', 'beco ', 'vila ', 'conj.', 'conjunto ', 'lot.', 'loteamento ']):
+                        continue
+                    # Skip known city names that could confuse extraction
+                    if lower in ('olinda', 'recife', 'camaragibe', 'são lourenço da mata', 'jaboatão',
+                                 'jaboatão dos guararapes', 'paulista', 'brasil', 'brazil'):
                         continue
                     # Check for "123 - Bairro" pattern (number dash name)
-                    dash_match = re.match(r'^\d+\s*-\s*(.+)$', part.strip())
+                    dash_match = re.match(r'^\d+\s*-\s*(.+)$', cleaned)
                     if dash_match:
                         neighborhood = dash_match.group(1).strip()
                         break
                     # Otherwise this part might be the bairro
-                    if len(part.strip()) > 2 and not part.strip().isdigit():
-                        neighborhood = part.strip()
+                    if len(cleaned) > 2 and not cleaned.isdigit():
+                        neighborhood = cleaned
                         # Don't break - keep looking for a better match (after dash)
 
             # Extract ONLY the business's own phone number (not reviews/ads)
@@ -734,6 +744,7 @@ async def run_scraper(
     scrape_cities: list[str] | None = None,
     custom_categories: list[str] | None = None,
     custom_neighborhoods: list[str] | None = None,
+    disabled_neighborhoods: dict[str, list[str]] | None = None,
 ) -> int:
     """
     Main entry point for the scraper.
@@ -742,6 +753,7 @@ async def run_scraper(
     scrape_cities filters which cities to scrape (empty/None = all).
     custom_categories: extra categories added from dashboard.
     custom_neighborhoods: extra neighborhoods added from dashboard.
+    disabled_neighborhoods: dict of {city: [neighborhoods to skip]}.
     """
     total_inserted = 0
 
@@ -803,6 +815,20 @@ async def run_scraper(
                     cn = cn.strip()
                     if cn and cn not in cities_to_scrape[city]:
                         cities_to_scrape[city].append(cn)
+
+        # Remove disabled neighborhoods per city
+        if disabled_neighborhoods:
+            for city in cities_to_scrape:
+                disabled = disabled_neighborhoods.get(city, [])
+                if disabled:
+                    before = len(cities_to_scrape[city])
+                    cities_to_scrape[city] = [
+                        n for n in cities_to_scrape[city] if n not in disabled
+                    ]
+                    logger.info(
+                        "City '%s': %d neighborhoods disabled, %d remaining",
+                        city, before - len(cities_to_scrape[city]), len(cities_to_scrape[city]),
+                    )
 
         # Build search locations: city-wide + each neighbourhood
         locations = []

@@ -57,6 +57,7 @@ async def _run_cycle(pool, settings: Settings, proxy_rotator: ProxyRotator, waha
     cities = _runtime_settings.get("scrape_cities", settings.scrape_cities)
     custom_cats = _runtime_settings.get("custom_categories", [])
     custom_neighs = _runtime_settings.get("custom_neighborhoods", [])
+    disabled_neighs = _runtime_settings.get("disabled_neighborhoods", {})
     logger.info("═══ Cycle %d ═══ (mode=%s, cities=%s)", _cycle_counter, mode, cities or "all")
 
     # --- Scrape ---
@@ -66,6 +67,7 @@ async def _run_cycle(pool, settings: Settings, proxy_rotator: ProxyRotator, waha
             scrape_cities=cities,
             custom_categories=custom_cats,
             custom_neighborhoods=custom_neighs,
+            disabled_neighborhoods=disabled_neighs,
         )
         logger.info("Scraper returned %d new leads", new_leads)
     except Exception as exc:
