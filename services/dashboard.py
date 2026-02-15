@@ -47,7 +47,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .header-brand img{height:36px}
 h1{font-size:1.6rem;font-weight:700;background:linear-gradient(135deg,#9333ea,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 h1 span{font-weight:300;opacity:.7}
-.header-actions{display:flex;gap:10px}
+.header-actions{display:flex;gap:10px;flex-wrap:wrap}
 .btn{padding:8px 18px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);cursor:pointer;font-size:.85rem;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
 .btn:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow)}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
@@ -58,7 +58,7 @@ h1 span{font-weight:300;opacity:.7}
 .btn-toggle.active .dot{background:var(--green)}
 
 /* Stats */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 24px;position:relative;overflow:hidden}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
 .stat-card.total::before{background:linear-gradient(90deg,var(--accent),var(--cyan))}
@@ -69,18 +69,18 @@ h1 span{font-weight:300;opacity:.7}
 .stat-value{font-size:2rem;font-weight:700;line-height:1}
 
 /* Filters */
-.filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:20px;align-items:end}
 .filter-group{display:flex;flex-direction:column;gap:4px}
 .filter-group label{font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)}
-select,input[type="text"]{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:.85rem;min-width:150px;outline:none;transition:border-color .2s}
+select,input[type="text"]{padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:.85rem;width:100%;outline:none;transition:border-color .2s}
 select:focus,input:focus{border-color:var(--accent)}
 
 /* Table */
 .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow-x:auto}
 table{width:100%;border-collapse:collapse;table-layout:auto}
 thead{background:var(--surface)}
-th{padding:10px 14px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:8px 14px;font-size:.8rem;border-bottom:1px solid var(--border);white-space:normal;word-break:break-word}
+th{padding:12px 16px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 16px;font-size:.8rem;border-bottom:1px solid var(--border);white-space:normal;word-break:break-word}
 td:first-child,td:nth-child(6),td:nth-child(7),td:nth-child(8){white-space:nowrap}
 tr:last-child td{border-bottom:none}
 tr:hover{background:rgba(124,92,252,.04)}
@@ -92,19 +92,25 @@ tr:hover{background:rgba(124,92,252,.04)}
 .wa-link:hover{text-decoration:underline}
 
 /* Settings Panel */
-.settings-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:24px;animation:fadeUp .3s ease-out both}
-.settings-panel h2{font-size:.9rem;font-weight:600;margin-bottom:16px;color:var(--text);display:flex;align-items:center;gap:8px}
+.settings-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px 32px;margin-bottom:28px;animation:fadeUp .3s ease-out both}
+.settings-panel h2{font-size:1rem;font-weight:600;margin-bottom:20px;color:var(--text);display:flex;align-items:center;gap:8px}
 .settings-panel h2 span{color:var(--text-muted);font-weight:400;font-size:.75rem}
-.settings-row{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end}
-.settings-row .filter-group{min-width:160px}
-.city-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-.city-chip{padding:6px 14px;border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text-muted);font-size:.78rem;cursor:pointer;transition:all .2s;user-select:none}
+.settings-top{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end;margin-bottom:24px}
+.settings-section{margin-bottom:20px}
+.settings-section:last-child{margin-bottom:0}
+.section-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;display:block}
+.section-label span{font-weight:400}
+.city-chips{display:flex;flex-wrap:wrap;gap:10px}
+.city-chip{padding:8px 16px;border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text-muted);font-size:.82rem;cursor:pointer;transition:all .2s;user-select:none}
 .city-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(147,51,234,.12);box-shadow:0 0 10px rgba(147,51,234,.15)}
 .city-chip:hover{border-color:var(--accent)}
-.btn-save{padding:8px 20px;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s}
+.add-row{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.add-row input{flex:1;max-width:400px}
+.btn-save{padding:10px 24px;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s}
 .btn-save:hover{opacity:.85}
 .settings-status{font-size:.75rem;color:var(--green);margin-left:12px;opacity:0;transition:opacity .3s}
 .settings-status.show{opacity:1}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
 
 /* Footer */
 .footer{text-align:center;padding:32px 0 16px;color:var(--text-muted);font-size:.75rem}
@@ -117,10 +123,33 @@ tr:hover{background:rgba(124,92,252,.04)}
 .stat-card:nth-child(4){animation-delay:.15s}
 .table-wrap{animation-delay:.2s}
 
+/* Responsive */
+@media(max-width:1024px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .filters{grid-template-columns:repeat(3,1fr)}
+}
 @media(max-width:768px){
-  .stats{grid-template-columns:1fr 1fr}
+  .container{padding:16px 12px}
+  header{flex-direction:column;align-items:flex-start;gap:12px}
+  .header-actions{width:100%;justify-content:space-between}
+  .stats{grid-template-columns:1fr 1fr;gap:10px}
+  .stat-card{padding:14px 16px}
   .stat-value{font-size:1.5rem}
-  td,th{padding:6px 8px;font-size:.75rem}
+  .settings-panel{padding:18px 16px}
+  .settings-top{grid-template-columns:1fr}
+  .filters{grid-template-columns:1fr 1fr}
+  td,th{padding:8px 10px;font-size:.75rem}
+  .add-row{flex-direction:column;align-items:stretch}
+  .add-row input{max-width:100%}
+}
+@media(max-width:480px){
+  .stats{grid-template-columns:1fr}
+  .filters{grid-template-columns:1fr}
+  .header-actions{flex-direction:column;gap:8px}
+  .header-actions .btn{width:100%;justify-content:center}
+  h1{font-size:1.3rem}
+  .city-chips{gap:6px}
+  .city-chip{padding:6px 12px;font-size:.75rem}
 }
 </style>
 </head>
@@ -140,21 +169,22 @@ tr:hover{background:rgba(124,92,252,.04)}
 
   <div class="settings-panel" id="settingsPanel">
     <h2>⚙️ Configurações do Scraper <span id="settingsStatus" class="settings-status">✓ Salvo!</span></h2>
-    <div class="settings-row">
+
+    <div class="settings-top">
       <div class="filter-group">
         <label>Modo do Scraper</label>
-        <select id="scraperMode">
+        <select id="scraperMode" style="max-width:300px">
           <option value="zappy">🍔 Zappy (Alimentação)</option>
           <option value="lojaky">🛒 Lojaky (Comércio)</option>
         </select>
       </div>
-      <div class="filter-group">
-        <label>&nbsp;</label>
-        <button class="btn-save" onclick="saveSettings()">💾 Salvar Configurações</button>
-      </div>
+      <button class="btn-save" onclick="saveSettings()">💾 Salvar Configurações</button>
     </div>
-    <div style="margin-top:14px">
-      <label style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Cidades Ativas <span style="font-weight:400">(clique para ativar/desativar)</span></label>
+
+    <hr class="divider">
+
+    <div class="settings-section">
+      <label class="section-label">📍 Cidades Ativas <span>(clique para ativar/desativar)</span></label>
       <div class="city-chips" id="cityChips">
         <div class="city-chip active" data-city="Olinda, PE" onclick="toggleCity(this)">📍 Olinda</div>
         <div class="city-chip active" data-city="Camaragibe, PE" onclick="toggleCity(this)">📍 Camaragibe</div>
@@ -162,21 +192,27 @@ tr:hover{background:rgba(124,92,252,.04)}
         <div class="city-chip active" data-city="São Lourenço da Mata, PE" onclick="toggleCity(this)">📍 São Lourenço da Mata</div>
       </div>
     </div>
-    <div style="margin-top:14px">
-      <label style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Bairros Extras <span style="font-weight:400">(adicionados a todas as cidades ativas)</span></label>
-      <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
-        <input type="text" id="newNeighborhood" placeholder="Nome do bairro..." style="min-width:200px" onkeydown="if(event.key==='Enter'){addNeighborhood()}">
-        <button class="btn" onclick="addNeighborhood()" style="padding:6px 12px">+ Adicionar</button>
+
+    <hr class="divider">
+
+    <div class="settings-section">
+      <label class="section-label">🏘️ Bairros Extras <span>(adicionados a todas as cidades ativas)</span></label>
+      <div class="add-row">
+        <input type="text" id="newNeighborhood" placeholder="Ex: Boa Viagem, Casa Forte..." onkeydown="if(event.key==='Enter'){addNeighborhood()}">
+        <button class="btn" onclick="addNeighborhood()" style="padding:8px 16px;white-space:nowrap">+ Adicionar</button>
       </div>
-      <div class="city-chips" id="neighborhoodChips" style="margin-top:8px"></div>
+      <div class="city-chips" id="neighborhoodChips"></div>
     </div>
-    <div style="margin-top:14px">
-      <label style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Categorias Extras <span style="font-weight:400">(além das padrão do modo selecionado)</span></label>
-      <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
-        <input type="text" id="newCategory" placeholder="Nome da categoria..." style="min-width:200px" onkeydown="if(event.key==='Enter'){addCategory()}">
-        <button class="btn" onclick="addCategory()" style="padding:6px 12px">+ Adicionar</button>
+
+    <hr class="divider">
+
+    <div class="settings-section">
+      <label class="section-label">🏷️ Categorias Extras <span>(além das padrão do modo selecionado)</span></label>
+      <div class="add-row">
+        <input type="text" id="newCategory" placeholder="Ex: Sorveteria, Oficina..." onkeydown="if(event.key==='Enter'){addCategory()}">
+        <button class="btn" onclick="addCategory()" style="padding:8px 16px;white-space:nowrap">+ Adicionar</button>
       </div>
-      <div class="city-chips" id="categoryChips" style="margin-top:8px"></div>
+      <div class="city-chips" id="categoryChips"></div>
     </div>
   </div>
 
@@ -663,8 +699,26 @@ async def _handle_post_settings(request: web.Request) -> web.Response:
     if isinstance(neighs, list):
         rs["custom_neighborhoods"] = [n.strip() for n in neighs if n.strip()]
 
+    # Persist to database so settings survive restarts
+    pool: asyncpg.Pool = request.app["db_pool"]
+    settings_json = json.dumps({
+        "mode": rs.get("mode", "zappy"),
+        "scrape_cities": rs.get("scrape_cities", []),
+        "custom_categories": rs.get("custom_categories", []),
+        "custom_neighborhoods": rs.get("custom_neighborhoods", []),
+    })
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """INSERT INTO app_settings (key, value) VALUES ('scraper_config', $1::jsonb)
+                   ON CONFLICT (key) DO UPDATE SET value = $1::jsonb""",
+                settings_json,
+            )
+    except Exception as exc:
+        logger.warning("Failed to persist settings to DB: %s", exc)
+
     logger.info(
-        "Settings updated via dashboard: mode=%s, cities=%s, +%d cats, +%d neighs",
+        "Settings saved: mode=%s, cities=%s, +%d cats, +%d neighs",
         rs.get("mode"), rs.get("scrape_cities"),
         len(rs.get("custom_categories", [])), len(rs.get("custom_neighborhoods", [])),
     )
@@ -675,6 +729,25 @@ async def _handle_post_settings(request: web.Request) -> web.Response:
         "custom_categories": rs.get("custom_categories", []),
         "custom_neighborhoods": rs.get("custom_neighborhoods", []),
     })
+
+
+async def _load_settings_from_db(app: web.Application) -> None:
+    """Load persisted settings from database on startup."""
+    pool: asyncpg.Pool = app["db_pool"]
+    rs = app.get("runtime_settings", {})
+    try:
+        async with pool.acquire() as conn:
+            row = await conn.fetchval(
+                "SELECT value FROM app_settings WHERE key = 'scraper_config'"
+            )
+            if row:
+                saved = json.loads(row) if isinstance(row, str) else row
+                for k in ("mode", "scrape_cities", "custom_categories", "custom_neighborhoods"):
+                    if k in saved:
+                        rs[k] = saved[k]
+                logger.info("Loaded settings from DB: mode=%s, cities=%s", rs.get("mode"), rs.get("scrape_cities"))
+    except Exception as exc:
+        logger.warning("Could not load settings from DB (table may not exist yet): %s", exc)
 
 
 def create_dashboard_app(pool: asyncpg.Pool, runtime_settings: dict | None = None, **kwargs) -> web.Application:
@@ -692,10 +765,14 @@ def create_dashboard_app(pool: asyncpg.Pool, runtime_settings: dict | None = Non
     app.router.add_get("/api/settings", _handle_get_settings)
     app.router.add_post("/api/settings", _handle_post_settings)
 
+    # Load persisted settings from DB on startup
+    app.on_startup.append(_load_settings_from_db)
+
     # Serve static files (logo, favicon)
     static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
     if os.path.isdir(static_dir):
         app.router.add_static("/static/", static_dir, name="static")
 
     return app
+
 

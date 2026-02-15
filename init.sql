@@ -16,3 +16,9 @@ CREATE TABLE IF NOT EXISTS leads_olinda (
 
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads_olinda (status);
 CREATE INDEX IF NOT EXISTS idx_leads_category ON leads_olinda (category);
+
+-- Settings persistence (single-row key-value)
+CREATE TABLE IF NOT EXISTS app_settings (
+    key   TEXT PRIMARY KEY,
+    value JSONB NOT NULL DEFAULT '{}'
+);
