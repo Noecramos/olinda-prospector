@@ -396,6 +396,10 @@ function toggleNeighborhoodChip(el) {
   loadScraperInfo();
 }
 
+function safeCityAttr(city) {
+  return city.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function renderCityNeighborhoods() {
   const container = document.getElementById('cityNeighborhoodsContainer');
   const activeChips = document.querySelectorAll('#cityChips .city-chip.active');
@@ -406,19 +410,19 @@ function renderCityNeighborhoods() {
     if (neighs.length === 0) return;
     const disabled = disabledNeighborhoods[city] || [];
     const activeCount = neighs.length - disabled.length;
-    const allOn = disabled.length === 0;
+    var safeCity = safeCityAttr(city);
     html += '<div style="margin-bottom:14px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
     html += '<span style="font-size:.8rem;font-weight:600;color:var(--text-muted)">📍 ' + escHtml(city) + ' <span style="color:var(--accent)">(' + activeCount + '/' + neighs.length + ')</span></span>';
     html += '<div style="display:flex;gap:6px">';
-    html += '<button class="btn" onclick="toggleAllNeighborhoods(\'' + escHtml(city).replace(/'/g, "\\'") + '\', true)" style="padding:3px 10px;font-size:.7rem">✅ Todos</button>';
-    html += '<button class="btn" onclick="toggleAllNeighborhoods(\'' + escHtml(city).replace(/'/g, "\\'") + '\', false)" style="padding:3px 10px;font-size:.7rem">❌ Nenhum</button>';
+    html += '<button class="btn" data-city="' + safeCity + '" data-enable="1" onclick="toggleAllNeighborhoods(this.dataset.city, true)" style="padding:3px 10px;font-size:.7rem">✅ Todos</button>';
+    html += '<button class="btn" data-city="' + safeCity + '" data-enable="0" onclick="toggleAllNeighborhoods(this.dataset.city, false)" style="padding:3px 10px;font-size:.7rem">❌ Nenhum</button>';
     html += '</div></div>';
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
     neighs.forEach(function(n) {
-      const isActive = disabled.indexOf(n) === -1;
-      const cls = isActive ? 'city-chip active' : 'city-chip';
-      html += '<div class="' + cls + '" data-city="' + escHtml(city) + '" data-neigh="' + escHtml(n) + '" onclick="toggleNeighborhoodChip(this)" style="font-size:.72rem;padding:4px 10px">' + escHtml(n) + '</div>';
+      var isActive = disabled.indexOf(n) === -1;
+      var cls = isActive ? 'city-chip active' : 'city-chip';
+      html += '<div class="' + cls + '" data-city="' + safeCity + '" data-neigh="' + safeCityAttr(n) + '" onclick="toggleNeighborhoodChip(this)" style="font-size:.72rem;padding:4px 10px">' + escHtml(n) + '</div>';
     });
     html += '</div></div>';
   });
