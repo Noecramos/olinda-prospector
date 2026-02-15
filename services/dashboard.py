@@ -95,17 +95,16 @@ tr:hover{background:rgba(124,92,252,.04)}
 .settings-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px 32px;margin-bottom:28px;animation:fadeUp .3s ease-out both}
 .settings-panel h2{font-size:1rem;font-weight:600;margin-bottom:20px;color:var(--text);display:flex;align-items:center;gap:8px}
 .settings-panel h2 span{color:var(--text-muted);font-weight:400;font-size:.75rem}
-.settings-top{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end;margin-bottom:24px}
-.settings-section{margin-bottom:20px}
-.settings-section:last-child{margin-bottom:0}
+.settings-section{margin-bottom:0}
 .section-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;display:block}
 .section-label span{font-weight:400}
+.settings-columns{display:grid;grid-template-columns:1fr 1fr;gap:28px}
 .city-chips{display:flex;flex-wrap:wrap;gap:10px}
 .city-chip{padding:8px 16px;border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text-muted);font-size:.82rem;cursor:pointer;transition:all .2s;user-select:none}
 .city-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(147,51,234,.12);box-shadow:0 0 10px rgba(147,51,234,.15)}
 .city-chip:hover{border-color:var(--accent)}
 .add-row{display:flex;gap:10px;align-items:center;margin-bottom:10px}
-.add-row input{flex:1;max-width:400px}
+.add-row input{flex:1}
 .btn-save{padding:10px 24px;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s}
 .btn-save:hover{opacity:.85}
 .settings-status{font-size:.75rem;color:var(--green);margin-left:12px;opacity:0;transition:opacity .3s}
@@ -136,11 +135,10 @@ tr:hover{background:rgba(124,92,252,.04)}
   .stat-card{padding:14px 16px}
   .stat-value{font-size:1.5rem}
   .settings-panel{padding:18px 16px}
-  .settings-top{grid-template-columns:1fr}
+  .settings-columns{grid-template-columns:1fr}
   .filters{grid-template-columns:1fr 1fr}
   td,th{padding:8px 10px;font-size:.75rem}
   .add-row{flex-direction:column;align-items:stretch}
-  .add-row input{max-width:100%}
 }
 @media(max-width:480px){
   .stats{grid-template-columns:1fr}
@@ -170,15 +168,12 @@ tr:hover{background:rgba(124,92,252,.04)}
   <div class="settings-panel" id="settingsPanel">
     <h2>⚙️ Configurações do Scraper <span id="settingsStatus" class="settings-status">✓ Salvo!</span></h2>
 
-    <div class="settings-top">
-      <div class="filter-group">
-        <label>Modo do Scraper</label>
-        <select id="scraperMode" style="max-width:300px">
-          <option value="zappy">🍔 Zappy (Alimentação)</option>
-          <option value="lojaky">🛒 Lojaky (Comércio)</option>
-        </select>
-      </div>
-      <button class="btn-save" onclick="saveSettings()">💾 Salvar Configurações</button>
+    <div class="settings-section">
+      <label class="section-label">Modo do Scraper</label>
+      <select id="scraperMode" style="max-width:350px">
+        <option value="zappy">🍔 Zappy (Alimentação)</option>
+        <option value="lojaky">🛒 Lojaky (Comércio)</option>
+      </select>
     </div>
 
     <hr class="divider">
@@ -195,25 +190,28 @@ tr:hover{background:rgba(124,92,252,.04)}
 
     <hr class="divider">
 
-    <div class="settings-section">
-      <label class="section-label">🏘️ Bairros Extras <span>(adicionados a todas as cidades ativas)</span></label>
-      <div class="add-row">
-        <input type="text" id="newNeighborhood" placeholder="Ex: Boa Viagem, Casa Forte..." onkeydown="if(event.key==='Enter'){addNeighborhood()}">
-        <button class="btn" onclick="addNeighborhood()" style="padding:8px 16px;white-space:nowrap">+ Adicionar</button>
+    <div class="settings-columns">
+      <div class="settings-section">
+        <label class="section-label">🏘️ Bairros Extras <span>(adicionados a todas as cidades ativas)</span></label>
+        <div class="add-row">
+          <input type="text" id="newNeighborhood" placeholder="Ex: Boa Viagem, Casa Forte..." onkeydown="if(event.key==='Enter'){addNeighborhood()}">
+          <button class="btn" onclick="addNeighborhood()" style="padding:8px 16px;white-space:nowrap">+ Adicionar</button>
+        </div>
+        <div class="city-chips" id="neighborhoodChips"></div>
       </div>
-      <div class="city-chips" id="neighborhoodChips"></div>
+      <div class="settings-section">
+        <label class="section-label">🏷️ Categorias Extras <span>(além das padrão do modo selecionado)</span></label>
+        <div class="add-row">
+          <input type="text" id="newCategory" placeholder="Ex: Sorveteria, Oficina..." onkeydown="if(event.key==='Enter'){addCategory()}">
+          <button class="btn" onclick="addCategory()" style="padding:8px 16px;white-space:nowrap">+ Adicionar</button>
+        </div>
+        <div class="city-chips" id="categoryChips"></div>
+      </div>
     </div>
 
     <hr class="divider">
 
-    <div class="settings-section">
-      <label class="section-label">🏷️ Categorias Extras <span>(além das padrão do modo selecionado)</span></label>
-      <div class="add-row">
-        <input type="text" id="newCategory" placeholder="Ex: Sorveteria, Oficina..." onkeydown="if(event.key==='Enter'){addCategory()}">
-        <button class="btn" onclick="addCategory()" style="padding:8px 16px;white-space:nowrap">+ Adicionar</button>
-      </div>
-      <div class="city-chips" id="categoryChips"></div>
-    </div>
+    <button class="btn-save" onclick="saveSettings()">💾 Salvar Configurações</button>
   </div>
 
   <div class="stats" id="statsRow">
