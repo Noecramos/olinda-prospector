@@ -30,7 +30,7 @@ class WahaClient:
     def _headers(self) -> dict[str, str]:
         h: dict[str, str] = {"Content-Type": "application/json"}
         if self.api_key:
-            h["Authorization"] = f"Bearer {self.api_key}"
+            h["X-Api-Key"] = self.api_key
         return h
 
     def _format_chat_id(self, phone: str) -> str:
@@ -46,8 +46,8 @@ class WahaClient:
     ) -> dict[str, Any]:
         """Send a text message via WAHA. Returns the API response."""
         chat_id = self._format_chat_id(phone)
-        endpoint = f"{self.api_url}/api/{self.session}/sendText"
-        payload = {"chatId": chat_id, "text": text}
+        endpoint = f"{self.api_url}/api/sendText"
+        payload = {"session": self.session, "chatId": chat_id, "text": text}
 
         own_session = session is None
         if own_session:
@@ -101,16 +101,15 @@ class WahaClient:
 def build_zappy_pitch(business_name: str) -> str:
     """Sales pitch for food businesses (Zappy)."""
     return (
-        f"Olá, {business_name}! 👋\n\n"
-        "Somos do Zappy e encontrei seu negócio no Google Maps. "
+        "Olá! 👋\n\n"
+        "Somos do Zappy e encontrei seu negócio no Google. "
         "Parabéns pelo trabalho! 🎉\n\n"
-        "A Zappy é uma plataforma de gestão completa para restaurantes, "
-        "pizzarias, Lanchonetes e muito mais, que ajuda a:\n\n"
+        "A Zappy é uma plataforma de gestão completa para "
+        "Delivery e muito mais, que ajuda a:\n\n"
         "📱 Receber pedidos por WhatsApp automaticamente\n"
         "📊 Controlar estoque e vendas em tempo real\n"
-        "🛵 Gerenciar entregas com rastreamento\n"
-        "💰 Reduzir custos sem taxas diferente de outros apps de delivery\n\n"
-        "Você mantém 100% do lucro\n\n"
+        "💰 Sem taxas diferente de outros apps de delivery "
+        "*Você mantém 100% do lucro!*\n\n"
         "Segue o link para dar uma olhada! 😊\n\n"
         "https://zappy.noviapp.com.br/\n\n"
         "Se tiver interesse faça seu cadastro sem compromisso aqui: "
@@ -122,16 +121,14 @@ def build_zappy_pitch(business_name: str) -> str:
 def build_lojaky_pitch(business_name: str) -> str:
     """Sales pitch for retail businesses (Lojaky)."""
     return (
-        f"Olá, {business_name}! 👋\n\n"
-        "Somos do Lojaky e encontrei seu negócio no Google Maps. "
+        "Olá! 👋\n\n"
+        "Somos do Lojaky e encontrei seu negócio no Google. "
         "Parabéns pelo trabalho! 🎉\n\n"
-        "O Lojaky é uma plataforma de vendas online completa para lojas, "
-        "boutiques, pet shops e muito mais, que ajuda a:\n\n"
+        "O Lojaky é uma plataforma de vendas online completa para "
+        "lojas e muito mais, que ajuda a:\n\n"
         "🛒 Vender pelo WhatsApp com catálogo digital\n"
         "📦 Controlar estoque e vendas em tempo real\n"
-        "📈 Aumentar vendas com promoções automatizadas\n"
-        "💳 Receber pagamentos via PIX e cartão sem taxas!\n\n"
-        "Você mantém 100% do lucro\n\n"
+        "💰 Sem taxas *Você mantém 100% do lucro!*\n\n"
         "Segue o link para dar uma olhada! 😊\n\n"
         "https://lojaky.noviapp.com.br/\n\n"
         "Se tiver interesse faça seu cadastro sem compromisso aqui: "
