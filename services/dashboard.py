@@ -28,7 +28,7 @@ _DASHBOARD_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>+Leads — Dashboard</title>
+<title>+Leads — Painel</title>
 <link rel="icon" type="image/png" href="/static/favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -114,27 +114,27 @@ tr:hover{background:rgba(124,92,252,.04)}
   <header>
     <div class="header-brand">
       <img src="/static/logo.png" alt="NoviApp">
-      <h1>+Leads <span>Dashboard</span></h1>
+      <h1>+Leads <span>Painel</span></h1>
     </div>
     <div class="header-actions">
-      <a class="btn" href="/api/export/csv" id="exportBtn">&#11015; Export CSV</a>
-      <button class="btn" onclick="clearAll()" style="border-color:var(--red);color:var(--red)">&#128465; Clear All</button>
-      <button class="btn btn-primary" onclick="loadData()">&#8635; Refresh</button>
+      <a class="btn" href="/api/export/csv" id="exportBtn">&#11015; Exportar CSV</a>
+      <button class="btn" onclick="clearAll()" style="border-color:var(--red);color:var(--red)">&#128465; Limpar Tudo</button>
+      <button class="btn btn-primary" onclick="loadData()">&#8635; Atualizar</button>
     </div>
   </header>
 
   <div class="stats" id="statsRow">
-    <div class="stat-card total"><div class="stat-label">Total Leads</div><div class="stat-value" id="statTotal">&mdash;</div></div>
-    <div class="stat-card pending"><div class="stat-label">Pending</div><div class="stat-value" id="statPending">&mdash;</div></div>
-    <div class="stat-card sent"><div class="stat-label">Sent</div><div class="stat-value" id="statSent">&mdash;</div></div>
-    <div class="stat-card categories"><div class="stat-label">Categories</div><div class="stat-value" id="statCategories">&mdash;</div></div>
+    <div class="stat-card total"><div class="stat-label">Total de Leads</div><div class="stat-value" id="statTotal">&mdash;</div></div>
+    <div class="stat-card pending"><div class="stat-label">Pendentes</div><div class="stat-value" id="statPending">&mdash;</div></div>
+    <div class="stat-card sent"><div class="stat-label">Enviados</div><div class="stat-value" id="statSent">&mdash;</div></div>
+    <div class="stat-card categories"><div class="stat-label">Categorias</div><div class="stat-value" id="statCategories">&mdash;</div></div>
   </div>
 
   <div class="filters">
     <div class="filter-group">
-      <label>Mode</label>
+      <label>Modo</label>
       <select id="filterMode" onchange="onModeChange()">
-        <option value="">All</option>
+        <option value="">Todos</option>
         <option value="Zappy">🍔 Zappy</option>
         <option value="Lojaky">🛒 Lojaky</option>
       </select>
@@ -142,31 +142,31 @@ tr:hover{background:rgba(124,92,252,.04)}
     <div class="filter-group">
       <label>Status</label>
       <select id="filterStatus" onchange="loadData()">
-        <option value="">All</option>
-        <option value="Pending">Pending</option>
-        <option value="Sent">Sent</option>
+        <option value="">Todos</option>
+        <option value="Pending">Pendente</option>
+        <option value="Sent">Enviado</option>
       </select>
     </div>
     <div class="filter-group">
-      <label>Neighborhood</label>
+      <label>Bairro</label>
       <select id="filterNeighborhood" onchange="loadData()">
-        <option value="">All</option>
+        <option value="">Todos</option>
       </select>
     </div>
     <div class="filter-group">
-      <label>Category</label>
+      <label>Categoria</label>
       <select id="filterCategory" onchange="loadData()">
-        <option value="">All</option>
+        <option value="">Todas</option>
       </select>
     </div>
     <div class="filter-group">
-      <label>Search</label>
-      <input type="text" id="filterSearch" placeholder="Business name..." oninput="filterTable()">
+      <label>Buscar</label>
+      <input type="text" id="filterSearch" placeholder="Nome do negócio..." oninput="filterTable()">
     </div>
     <div class="filter-group">
       <label>&nbsp;</label>
       <button class="btn btn-toggle active" id="toggleWhatsApp" onclick="toggleWhatsApp()">
-        <span class="dot"></span> Only WhatsApp
+        <span class="dot"></span> Só WhatsApp
       </button>
     </div>
   </div>
@@ -175,8 +175,8 @@ tr:hover{background:rgba(124,92,252,.04)}
     <table>
       <thead>
         <tr>
-          <th>#</th><th>Business</th><th>WhatsApp</th><th>Neighborhood</th>
-          <th>Category</th><th>Rating</th><th>Status</th><th>Created</th>
+          <th>#</th><th>Negócio</th><th>WhatsApp</th><th>Bairro</th>
+          <th>Categoria</th><th>Avaliação</th><th>Status</th><th>Data</th>
         </tr>
       </thead>
       <tbody id="leadsBody"></tbody>
@@ -199,7 +199,7 @@ function onModeChange() {
   const h1 = document.querySelector('h1');
   if (mode === 'Zappy') h1.innerHTML = '+Leads <span>🍔 Zappy</span>';
   else if (mode === 'Lojaky') h1.innerHTML = '+Leads <span>🛒 Lojaky</span>';
-  else h1.innerHTML = '+Leads <span>Dashboard</span>';
+  else h1.innerHTML = '+Leads <span>Painel</span>';
   loadData();
 }
 
@@ -258,7 +258,7 @@ function renderStats(s) {
 function populateCategoryFilter(categories) {
   const el = document.getElementById('filterCategory');
   const current = el.value;
-  el.innerHTML = '<option value="">All</option>';
+  el.innerHTML = '<option value="">Todas</option>';
   categories.forEach(function(c) {
     const opt = document.createElement('option');
     opt.value = c; opt.textContent = c;
@@ -270,7 +270,7 @@ function populateCategoryFilter(categories) {
 function populateNeighborhoodFilter(neighborhoods) {
   const el = document.getElementById('filterNeighborhood');
   const current = el.value;
-  el.innerHTML = '<option value="">All</option>';
+  el.innerHTML = '<option value="">Todos</option>';
   neighborhoods.forEach(function(n) {
     const opt = document.createElement('option');
     opt.value = n; opt.textContent = n;
@@ -282,7 +282,7 @@ function populateNeighborhoodFilter(neighborhoods) {
 function renderTable(leads) {
   const tbody = document.getElementById('leadsBody');
   if (!leads.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:48px">No leads found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:48px">Nenhum lead encontrado</td></tr>';
     return;
   }
   tbody.innerHTML = leads.map(function(l) {
@@ -315,13 +315,13 @@ function escHtml(s) {
 }
 
 async function clearAll() {
-  if (!confirm('Delete ALL leads? This cannot be undone.')) return;
+  if (!confirm('Apagar TODOS os leads? Esta ação não pode ser desfeita.')) return;
   try {
     const res = await fetch('/api/leads/clear', { method: 'DELETE' });
     const data = await res.json();
-    alert('Deleted ' + (data.deleted || 0) + ' leads');
+    alert(data.deleted + ' leads apagados');
     loadData();
-  } catch (e) { alert('Error: ' + e.message); }
+  } catch (e) { alert('Erro: ' + e.message); }
 }
 
 loadData();
