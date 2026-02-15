@@ -240,7 +240,10 @@ tr:hover{background:rgba(124,92,252,.04)}
   <div class="settings-panel collapsed" id="settingsPanel">
     <div class="settings-toggle" onclick="document.getElementById('settingsPanel').classList.toggle('collapsed')">
       <h2>⚙️ Configurações do Scraper <span id="settingsStatus" class="settings-status">✓ Salvo!</span></h2>
-      <span class="arrow">▼</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn-save" onclick="event.stopPropagation();saveSettings()" style="padding:6px 16px;font-size:.78rem">💾 Salvar</button>
+        <span class="arrow">▼</span>
+      </div>
     </div>
     <div class="settings-body">
 
