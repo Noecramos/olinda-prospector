@@ -744,7 +744,7 @@ function renderStats(s) {
   var newHot = s.quente || 0;
   if (_prevHotCount !== null && newHot > _prevHotCount) {
     var diff = newHot - _prevHotCount;
-    showToast('\ud83d\udd25 ' + diff + ' novo(s) lead(s) Quente(s)! Algu\u00e9m respondeu!', 'success');
+    showToast('🔥 ' + diff + ' novo(s) lead(s) Quente(s)! Alguém respondeu!', 'success');
     playNotificationSound();
   }
   _prevHotCount = newHot;
@@ -804,7 +804,7 @@ function renderTable(leads) {
   }
   tbody.innerHTML = leads.map(function(l) {
     var statusMap = {'Pending':'badge-pending','Sent':'badge-sent','Quente':'badge-quente','Frio':'badge-frio','Convertido':'badge-convertido'};
-    var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'\ud83d\udd25 Quente','Frio':'\ud83e\uddca Frio','Convertido':'\u2705 Convertido'};
+    var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'🔥 Quente','Frio':'🧊 Frio','Convertido':'✅ Convertido'};
     var statusClass = statusMap[l.status] || 'badge-pending';
     var statusLabel = labelMap[l.status] || l.status;
     var waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
