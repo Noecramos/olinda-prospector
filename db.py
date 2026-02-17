@@ -120,7 +120,13 @@ async def fetch_pending_leads(pool: asyncpg.Pool, limit: int = 50, target_saas: 
     """Fetch up to `limit` leads with status 'Pending', excluding phones already messaged.
     If target_saas is provided, only fetch leads matching that mode (e.g. 'Zappy' or 'Lojaky').
     """
-    conditions = ["status = 'Pending'", "whatsapp IS NOT NULL"]
+    conditions = [
+        "status = 'Pending'",
+        "whatsapp IS NOT NULL",
+        "LENGTH(whatsapp) >= 12",      # At least 55 + DDD + 8 digits
+        "LENGTH(whatsapp) <= 13",      # At most 55 + DDD + 9 digits
+        "whatsapp ~ '^55[1-9][0-9]9'", # Must be BR mobile (starts with 55 + DDD + 9)
+    ]
     params: list[Any] = [limit]
     
     if target_saas:

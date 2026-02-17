@@ -80,12 +80,60 @@ class WhatsAppCloudClient:
         return "".join(c for c in phone if c.isdigit())
 
     @staticmethod
+    def validate_br_phone(phone: str) -> tuple[bool, str]:
+        """
+        Validate a Brazilian phone number for WhatsApp.
+        Returns (is_valid, reason).
+
+        Rules:
+        - Must have country code 55
+        - DDD (area code) must be 2 digits (11-99)
+        - Mobile numbers: 9 digits starting with 9 (e.g. 9xxxx-xxxx)
+        - Landlines: 8 digits starting with 2-5 → NO WhatsApp!
+        - Total: 55 + 2 (DDD) + 9 (mobile) = 13 digits
+        """
+        digits = "".join(c for c in phone if c.isdigit())
+
+        # Add country code if missing
+        if not digits.startswith("55"):
+            digits = "55" + digits
+
+        # Must be 12-13 digits (55 + DDD + 8-9 digit number)
+        if len(digits) < 12:
+            return False, f"too_short ({len(digits)} digits)"
+        if len(digits) > 13:
+            return False, f"too_long ({len(digits)} digits)"
+
+        # Extract DDD and number
+        ddd = digits[2:4]
+        number = digits[4:]
+
+        # DDD must be 11-99
+        ddd_int = int(ddd)
+        if ddd_int < 11 or ddd_int > 99:
+            return False, f"invalid_ddd ({ddd})"
+
+        # 8-digit number = landline (starts with 2, 3, 4, or 5) → NO WhatsApp
+        if len(number) == 8:
+            return False, "landline (8 digits)"
+
+        # 9-digit number must start with 9 (mobile)
+        if len(number) == 9:
+            if not number.startswith("9"):
+                return False, f"invalid_mobile (starts with {number[0]})"
+            # Check for obvious fake patterns
+            if number in ("999999999", "900000000", "911111111", "900000001"):
+                return False, "fake_number"
+            return True, "valid_mobile"
+
+        return False, f"unexpected_length ({len(number)} local digits)"
+
+    @staticmethod
     def _is_non_retryable(body: dict) -> bool:
         """Check if the error response indicates a non-retryable error."""
         error = body.get("error", {})
         error_msg = error.get("message", "").lower()
         error_code = error.get("code", 0)
-        error_subcode = error.get("error_subcode", 0)
 
         # Check text patterns
         if any(err.lower() in error_msg for err in NON_RETRYABLE_ERRORS):
@@ -112,11 +160,13 @@ class WhatsAppCloudClient:
         session: aiohttp.ClientSession | None = None,
     ) -> bool:
         """
-        The Cloud API doesn't have a pre-check endpoint like WAHA.
-        We always return True — invalid numbers will be caught during send
-        and handled as non-retryable errors.
+        Validate the phone number format before attempting to send.
+        Filters out landlines and invalid numbers to save API calls.
         """
-        return True
+        is_valid, reason = self.validate_br_phone(phone)
+        if not is_valid:
+            logger.info("Skipping invalid number %s: %s", phone, reason)
+        return is_valid
 
     async def send_text(
         self,

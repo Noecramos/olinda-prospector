@@ -200,6 +200,16 @@ async def _send_whatsapp_messages(
             name = lead["business_name"]
             target = lead.get("target_saas")
 
+            # Validate phone number BEFORE sending (saves API calls & money)
+            if not await whatsapp.check_number_exists(phone):
+                # Invalid number — mark as sent to skip in future cycles
+                success_ids.append(lead["id"])
+                logger.info(
+                    "🚫 [%d/%d] Skipped %s (%s) — invalid number format",
+                    i + 1, len(leads), name, phone,
+                )
+                continue
+
             # Use approved Meta template for business-initiated messages
             template_name = get_template_for_lead(target)
 
