@@ -217,6 +217,125 @@ class WhatsAppCloudClient:
             if own_session:
                 await session.close()
 
+    async def send_template(
+        self,
+        phone: str,
+        template_name: str,
+        language_code: str = "pt_BR",
+        header_image_url: str = "",
+        session: aiohttp.ClientSession | None = None,
+    ) -> dict[str, Any]:
+        """
+        Send a pre-approved template message via the WhatsApp Cloud API.
+        This is REQUIRED for business-initiated conversations (first message to a lead).
+
+        Uses the /messages endpoint:
+        POST https://graph.facebook.com/v21.0/{phone_number_id}/messages
+        {
+            "messaging_product": "whatsapp",
+            "to": "5581999999999",
+            "type": "template",
+            "template": {
+                "name": "vendas_zappy",
+                "language": {"code": "pt_BR"},
+                "components": [...]
+            }
+        }
+        """
+        recipient = self._format_phone(phone)
+
+        # Build template components
+        components: list[dict[str, Any]] = []
+
+        # If header image is provided, add it as header component
+        if header_image_url:
+            components.append({
+                "type": "header",
+                "parameters": [{
+                    "type": "image",
+                    "image": {"link": header_image_url},
+                }],
+            })
+
+        payload = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": recipient,
+            "type": "template",
+            "template": {
+                "name": template_name,
+                "language": {"code": language_code},
+            },
+        }
+
+        # Only add components if there are any (header image, etc.)
+        if components:
+            payload["template"]["components"] = components
+
+        own_session = session is None
+        if own_session:
+            session = aiohttp.ClientSession()
+
+        try:
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    async with session.post(
+                        self._messages_url,
+                        json=payload,
+                        headers=self._headers(),
+                        timeout=aiohttp.ClientTimeout(total=30),
+                    ) as resp:
+                        body = await resp.json()
+
+                        if resp.status < 300:
+                            msg_id = ""
+                            messages = body.get("messages", [])
+                            if messages:
+                                msg_id = messages[0].get("id", "")
+                            logger.info(
+                                "Template '%s' sent to %s (status %d, wamid=%s)",
+                                template_name, phone, resp.status, msg_id[:20],
+                            )
+                            return body
+
+                        else:
+                            if self._is_non_retryable(body):
+                                error_detail = body.get("error", {}).get("message", str(body))
+                                logger.warning(
+                                    "Non-retryable error for %s (template=%s): %s",
+                                    phone, template_name, error_detail,
+                                )
+                                return {"error": "non_retryable", "detail": error_detail}
+
+                            if self._is_rate_limited(body):
+                                wait_time = min(60, RETRY_BACKOFF ** (attempt + 2))
+                                logger.warning(
+                                    "Rate limited for %s (attempt %d), waiting %ds",
+                                    phone, attempt, wait_time,
+                                )
+                                await asyncio.sleep(wait_time)
+                                continue
+
+                            logger.warning(
+                                "WhatsApp API returned %d for %s (attempt %d): %s",
+                                resp.status, phone, attempt, body,
+                            )
+
+                except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                    logger.warning(
+                        "WhatsApp API request failed for %s (attempt %d): %s",
+                        phone, attempt, exc,
+                    )
+
+                if attempt < MAX_RETRIES:
+                    await asyncio.sleep(RETRY_BACKOFF ** attempt)
+
+            logger.error("Failed to send template to %s after %d attempts", phone, MAX_RETRIES)
+            return {"error": f"Failed after {MAX_RETRIES} attempts"}
+        finally:
+            if own_session:
+                await session.close()
+
     async def check_session(self) -> dict[str, Any]:
         """
         Verify the API token and phone number ID are valid by calling
@@ -253,7 +372,25 @@ class WhatsAppCloudClient:
 
 
 # ═══════════════════════════════════════════════════════════════
-# MESSAGE TEMPLATES
+# TEMPLATE NAME MAPPING
+# ═══════════════════════════════════════════════════════════════
+
+# Map target_saas to the Meta-approved template name
+TEMPLATE_MAP = {
+    "Zappy": "vendas_zappy",
+    "Lojaky": "vendas_lojaky",
+}
+
+DEFAULT_TEMPLATE = "vendas_lojaky"
+
+
+def get_template_for_lead(target_saas: str | None) -> str:
+    """Return the approved template name for the given target_saas."""
+    return TEMPLATE_MAP.get(target_saas or "", DEFAULT_TEMPLATE)
+
+
+# ═══════════════════════════════════════════════════════════════
+# LEGACY TEXT BUILDERS (kept for customer service window replies)
 # ═══════════════════════════════════════════════════════════════
 
 def build_zappy_pitch(business_name: str) -> str:

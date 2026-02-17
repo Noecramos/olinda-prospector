@@ -26,7 +26,7 @@ import aiohttp
 import asyncpg
 
 from db import fetch_pending_leads, mark_leads_sent
-from services.whatsapp import WhatsAppCloudClient, get_pitch_for_lead
+from services.whatsapp import WhatsAppCloudClient, get_template_for_lead, get_pitch_for_lead
 
 logger = logging.getLogger(__name__)
 
@@ -200,9 +200,12 @@ async def _send_whatsapp_messages(
             name = lead["business_name"]
             target = lead.get("target_saas")
 
-            message = get_pitch_for_lead(name, target)
+            # Use approved Meta template for business-initiated messages
+            template_name = get_template_for_lead(target)
 
-            result = await whatsapp.send_text(phone, message, session=session)
+            result = await whatsapp.send_template(
+                phone, template_name, session=session,
+            )
 
             if "error" not in result:
                 # Success — message delivered
