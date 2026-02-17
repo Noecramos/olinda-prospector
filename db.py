@@ -85,19 +85,37 @@ async def init_db(pool: asyncpg.Pool) -> None:
     except Exception as exc:
         logger.warning("sent_at migration error: %s", exc)
 
-    # Cleanup: delete leads with invalid phone numbers (landlines, too short, etc.)
+    # Cleanup: normalize and delete leads with invalid phone numbers
     try:
         async with pool.acquire() as conn:
-            # Count before deleting
             before = await conn.fetchval("SELECT COUNT(*) FROM leads_olinda")
 
-            # Delete leads with NULL whatsapp
+            # Step 1: Normalize ALL phone numbers — strip non-digits
+            # "+55 (81) 93432-5466" → "5581934325466"
+            await conn.execute("""
+                UPDATE leads_olinda
+                SET whatsapp = REGEXP_REPLACE(whatsapp, '[^0-9]', '', 'g')
+                WHERE whatsapp IS NOT NULL
+                  AND whatsapp ~ '[^0-9]'
+            """)
+
+            # Step 2: Add '55' prefix if missing (local numbers stored without country code)
+            await conn.execute("""
+                UPDATE leads_olinda
+                SET whatsapp = '55' || whatsapp
+                WHERE whatsapp IS NOT NULL
+                  AND LENGTH(whatsapp) >= 10
+                  AND LENGTH(whatsapp) <= 11
+                  AND whatsapp !~ '^55'
+            """)
+
+            # Step 3: Delete leads with NULL whatsapp
             r1 = await conn.execute("""
                 DELETE FROM leads_olinda WHERE whatsapp IS NULL
             """)
             null_count = int(r1.split()[-1]) if r1 else 0
 
-            # Delete leads with phone numbers that are NOT valid BR mobile
+            # Step 4: Delete leads with phone numbers that are NOT valid BR mobile
             # Valid = 12-13 digits, starts with 55 + DDD(11-99) + 9
             r2 = await conn.execute("""
                 DELETE FROM leads_olinda
@@ -138,7 +156,18 @@ async def upsert_lead(
     """
     Insert a lead, ignoring duplicates on (business_name, category).
     Returns True if a new row was inserted, False if it already existed.
+    Normalizes the phone number before inserting.
     """
+    # Normalize phone: strip non-digits, add country code
+    if whatsapp:
+        digits = "".join(c for c in whatsapp if c.isdigit())
+        if not digits.startswith("55") and len(digits) >= 10:
+            digits = "55" + digits
+        # Validate: must be BR mobile (13 digits: 55 + DDD + 9xxxxxxxx)
+        if len(digits) >= 12 and len(digits) <= 13 and digits[:2] == "55" and len(digits) > 4 and digits[4] == "9":
+            whatsapp = digits
+        else:
+            whatsapp = None  # Invalid — don't store
     query = """
         INSERT INTO leads_olinda (business_name, whatsapp, neighborhood, category, google_rating, target_saas)
         VALUES ($1, $2, $3, $4, $5, $6)
