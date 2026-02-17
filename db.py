@@ -85,6 +85,45 @@ async def init_db(pool: asyncpg.Pool) -> None:
     except Exception as exc:
         logger.warning("sent_at migration error: %s", exc)
 
+    # Cleanup: delete leads with invalid phone numbers (landlines, too short, etc.)
+    try:
+        async with pool.acquire() as conn:
+            # Count before deleting
+            before = await conn.fetchval("SELECT COUNT(*) FROM leads_olinda")
+
+            # Delete leads with NULL whatsapp
+            r1 = await conn.execute("""
+                DELETE FROM leads_olinda WHERE whatsapp IS NULL
+            """)
+            null_count = int(r1.split()[-1]) if r1 else 0
+
+            # Delete leads with phone numbers that are NOT valid BR mobile
+            # Valid = 12-13 digits, starts with 55 + DDD(11-99) + 9
+            r2 = await conn.execute("""
+                DELETE FROM leads_olinda
+                WHERE whatsapp IS NOT NULL
+                  AND (
+                    LENGTH(whatsapp) < 12
+                    OR LENGTH(whatsapp) > 13
+                    OR whatsapp !~ '^55[1-9][0-9]9'
+                  )
+            """)
+            invalid_count = int(r2.split()[-1]) if r2 else 0
+
+            after = await conn.fetchval("SELECT COUNT(*) FROM leads_olinda")
+            total_removed = null_count + invalid_count
+
+            if total_removed > 0:
+                logger.info(
+                    "🧹 Phone cleanup: removed %d invalid leads "
+                    "(null=%d, invalid=%d) | Before: %d → After: %d",
+                    total_removed, null_count, invalid_count, before, after,
+                )
+            else:
+                logger.info("🧹 Phone cleanup: all %d leads have valid numbers", after)
+    except Exception as exc:
+        logger.warning("Phone cleanup migration error: %s", exc)
+
 
 async def upsert_lead(
     pool: asyncpg.Pool,
