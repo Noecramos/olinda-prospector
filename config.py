@@ -18,11 +18,11 @@ class Settings:
     # Prospector mode: "zappy" (food) or "lojaky" (retail)
     mode: str = "zappy"
 
-    # WAHA (WhatsApp HTTP API) settings
-    waha_api_url: str = ""
-    waha_api_key: str = ""
-    waha_session: str = "default"
-    waha_enabled: bool = False
+    # WhatsApp Cloud API (official Meta API) settings
+    whatsapp_token: str = ""          # Bearer token (System User or dev token)
+    whatsapp_phone_id: str = ""       # Phone Number ID from Meta dashboard
+    whatsapp_business_id: str = ""    # WhatsApp Business Account ID (optional)
+    whatsapp_enabled: bool = False    # True when token + phone_id are set
     message_delay: float = 3.0        # seconds between WhatsApp messages
     scrape_cities: list[str] = field(default_factory=list)  # which cities to scrape (empty = all)
 
@@ -46,11 +46,11 @@ class Settings:
         if mode not in ("zappy", "lojaky"):
             raise RuntimeError(f"PROSPECTOR_MODE must be 'zappy' or 'lojaky', got '{mode}'")
 
-        # WAHA
-        waha_api_url = os.getenv("WAHA_API_URL", "")
-        waha_api_key = os.getenv("WAHA_API_KEY", "")
-        waha_session = os.getenv("WAHA_SESSION", "default")
-        waha_enabled = bool(waha_api_url)
+        # WhatsApp Cloud API (official Meta API)
+        whatsapp_token = os.getenv("WHATSAPP_TOKEN", "")
+        whatsapp_phone_id = os.getenv("WHATSAPP_PHONE_ID", "")
+        whatsapp_business_id = os.getenv("WHATSAPP_BUSINESS_ID", "")
+        whatsapp_enabled = bool(whatsapp_token and whatsapp_phone_id)
         message_delay = float(os.getenv("MESSAGE_DELAY", "3.0"))
 
         # Cities to scrape (comma-separated, empty = all)
@@ -65,10 +65,10 @@ class Settings:
             dashboard_port=dashboard_port,
             proxy_list=proxy_list,
             mode=mode,
-            waha_api_url=waha_api_url,
-            waha_api_key=waha_api_key,
-            waha_session=waha_session,
-            waha_enabled=waha_enabled,
+            whatsapp_token=whatsapp_token,
+            whatsapp_phone_id=whatsapp_phone_id,
+            whatsapp_business_id=whatsapp_business_id,
+            whatsapp_enabled=whatsapp_enabled,
             message_delay=message_delay,
             scrape_cities=scrape_cities,
         )

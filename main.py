@@ -27,7 +27,7 @@ from core.scraper import run_scraper
 from db import get_pool, init_db, mark_cold_leads
 from services.dashboard import create_dashboard_app
 from services.dispatcher import dispatch_leads
-from services.waha import WahaClient
+from services.whatsapp import WhatsAppCloudClient
 
 # ──────────────────────────────────────────────
 # Logging
@@ -46,6 +46,7 @@ logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 _runtime_settings = {"mode": "zappy", "scrape_cities": []}
 _cycle_counter = 0
+_dispatch_counter = 0
 
 
 async def _run_cold_check(pool) -> None:
@@ -58,19 +59,18 @@ async def _run_cold_check(pool) -> None:
         logger.error("Cold check error: %s", exc)
 
 
-async def _run_cycle(pool, settings: Settings, proxy_rotator: ProxyRotator, waha: WahaClient | None = None) -> None:
-    """One full scrape → dispatch cycle."""
+async def _run_scrape(pool, settings: Settings, proxy_rotator: ProxyRotator) -> None:
+    """Run the scraper independently (long-running)."""
     global _cycle_counter
     _cycle_counter += 1
-    
+
     mode = _runtime_settings.get("mode", settings.mode)
     cities = _runtime_settings.get("scrape_cities", settings.scrape_cities)
     custom_cats = _runtime_settings.get("custom_categories", [])
     custom_neighs = _runtime_settings.get("custom_neighborhoods", [])
     disabled_neighs = _runtime_settings.get("disabled_neighborhoods", {})
-    logger.info("═══ Cycle %d ═══ (mode=%s, cities=%s)", _cycle_counter, mode, cities or "all")
+    logger.info("═══ Scrape Cycle %d ═══ (mode=%s, cities=%s)", _cycle_counter, mode, cities or "all")
 
-    # --- Scrape ---
     try:
         new_leads = await run_scraper(
             pool, proxy_rotator, mode=mode,
@@ -83,14 +83,25 @@ async def _run_cycle(pool, settings: Settings, proxy_rotator: ProxyRotator, waha
     except Exception as exc:
         logger.error("Scraper error: %s", exc, exc_info=True)
 
-    # --- Dispatch (WAHA + optional n8n webhook) ---
+
+async def _run_dispatch(pool, settings: Settings, whatsapp: WhatsAppCloudClient | None = None) -> None:
+    """Run the dispatcher independently (fast, runs every few minutes)."""
+    global _dispatch_counter
+    _dispatch_counter += 1
+
+    # Determine current mode to only dispatch matching leads
+    mode = _runtime_settings.get("mode", settings.mode)
+    target_saas = "Zappy" if mode == "zappy" else "Lojaky"
+    logger.info("═══ Dispatch Cycle %d ═══ (mode=%s)", _dispatch_counter, target_saas)
+
     try:
         dispatched = await dispatch_leads(
             pool,
             webhook_url=settings.n8n_webhook_url,
             api_key=settings.n8n_webhook_api_key,
-            waha=waha,
+            whatsapp=whatsapp,
             message_delay=settings.message_delay,
+            target_saas=target_saas,
         )
         logger.info("Dispatched %d leads", dispatched)
     except Exception as exc:
@@ -113,7 +124,7 @@ async def main() -> None:
     logger.info("  Interval   : %d s", settings.scrape_interval)
     logger.info("  Dashboard  : http://0.0.0.0:%d", settings.dashboard_port)
     logger.info("  Proxies    : %d configured", len(settings.proxy_list))
-    logger.info("  WAHA       : %s", settings.waha_api_url if settings.waha_enabled else "(not configured)")
+    logger.info("  WhatsApp  : %s", "Cloud API enabled" if settings.whatsapp_enabled else "(not configured)")
     logger.info("  Msg delay  : %.1f s", settings.message_delay)
 
     # ── Database ──
@@ -130,35 +141,53 @@ async def main() -> None:
     # ── Proxy Rotator ──
     proxy_rotator = ProxyRotator(settings.proxy_list)
 
-    # ── WAHA Client ──
-    waha: WahaClient | None = None
-    if settings.waha_enabled:
-        waha = WahaClient(
-            api_url=settings.waha_api_url,
-            api_key=settings.waha_api_key,
-            session=settings.waha_session,
+    # ── WhatsApp Cloud API Client ──
+    whatsapp: WhatsAppCloudClient | None = None
+    if settings.whatsapp_enabled:
+        whatsapp = WhatsAppCloudClient(
+            token=settings.whatsapp_token,
+            phone_number_id=settings.whatsapp_phone_id,
+            business_id=settings.whatsapp_business_id,
         )
-        status = await waha.check_session()
-        if isinstance(status, dict) and "error" in status:
-            logger.warning("WAHA session check failed: %s", status["error"])
-        elif isinstance(status, list) and status:
-            s = status[0]
-            logger.info("WAHA session active: %s (%s)", s.get("status", "?"), s.get("name", "?"))
+        status = await whatsapp.check_session()
+        if "error" in status:
+            logger.warning("WhatsApp Cloud API check failed: %s", status["error"])
         else:
-            logger.info("WAHA session response: %s", status)
+            logger.info(
+                "WhatsApp Cloud API connected: %s (quality=%s, status=%s)",
+                status.get("phone", "?"),
+                status.get("quality_rating", "?"),
+                status.get("phone_status", "?"),
+            )
 
     # ── APScheduler ──
     scheduler = AsyncIOScheduler()
+
+    # Scraper job — long-running, runs on its own schedule
     scheduler.add_job(
-        _run_cycle,
+        _run_scrape,
         "interval",
         seconds=settings.scrape_interval,
-        args=[pool, settings, proxy_rotator, waha],
-        id="scrape_dispatch",
-        name="Scrape & Dispatch",
+        args=[pool, settings, proxy_rotator],
+        id="scrape",
+        name="Scrape Leads",
         max_instances=1,
         misfire_grace_time=60,
     )
+
+    # Dispatch job — fast, runs every 5 minutes independently
+    dispatch_interval = 300  # 5 minutes
+    scheduler.add_job(
+        _run_dispatch,
+        "interval",
+        seconds=dispatch_interval,
+        args=[pool, settings, whatsapp],
+        id="dispatch",
+        name="Dispatch Messages",
+        max_instances=1,
+        misfire_grace_time=60,
+    )
+
     scheduler.add_job(
         _run_cold_check,
         "interval",
@@ -170,10 +199,15 @@ async def main() -> None:
         misfire_grace_time=300,
     )
     scheduler.start()
-    logger.info("Scheduler started — scrape every %d s, cold check every 2h", settings.scrape_interval)
+    logger.info(
+        "Scheduler started — scrape every %d s, dispatch every %d s, cold check every 2h",
+        settings.scrape_interval, dispatch_interval,
+    )
 
-    # Run first cycle immediately
-    asyncio.create_task(_run_cycle(pool, settings, proxy_rotator, waha))
+    # Run first dispatch immediately (scraper can start on schedule)
+    asyncio.create_task(_run_dispatch(pool, settings, whatsapp))
+    # Also start scraper immediately
+    asyncio.create_task(_run_scrape(pool, settings, proxy_rotator))
 
     # ── Dashboard Web Server ──
     dashboard_app = create_dashboard_app(pool, runtime_settings=_runtime_settings)

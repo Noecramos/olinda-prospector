@@ -74,14 +74,12 @@ h1 span{font-weight:300;opacity:.7}
 /* Conversion Funnel */
 .funnel-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:28px}
 .funnel-title{font-size:.9rem;font-weight:600;margin-bottom:16px;color:var(--text)}
-.funnel-steps{display:flex;align-items:center;gap:0}
-.funnel-step{flex:1;text-align:center;position:relative}
-.funnel-bar{height:40px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;position:relative;transition:all .4s ease}
-.funnel-step:first-child .funnel-bar{border-radius:8px 0 0 8px}
-.funnel-step:last-child .funnel-bar{border-radius:0 8px 8px 0}
-.funnel-label{font-size:.7rem;color:var(--text-muted);margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+.funnel-steps{display:flex;align-items:flex-end;gap:24px;justify-content:space-between}
+.funnel-step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center}
+.funnel-bar{height:40px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;border-radius:8px;transition:all .4s ease;min-width:48px;padding:0 12px;white-space:nowrap}
+.funnel-label{font-size:.7rem;color:var(--text-muted);margin-top:8px;text-transform:uppercase;letter-spacing:.5px}
 .funnel-pct{font-size:.65rem;color:var(--text-muted);margin-top:2px}
-.funnel-arrow{color:var(--text-muted);font-size:1.2rem;margin:0 -4px;z-index:1}
+.funnel-arrow{color:var(--text-muted);font-size:1.2rem;display:flex;align-items:center;margin:0 -8px}
 
 /* Filters */
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:20px;align-items:end}
@@ -101,12 +99,11 @@ select:focus,input:focus{border-color:var(--accent)}
 .table-wrap.collapsed .table-body{max-height:0}
 table{width:100%;border-collapse:collapse;table-layout:fixed}
 colgroup .col-id{width:60px}
-colgroup .col-name{width:22%}
-colgroup .col-wa{width:14%}
-colgroup .col-bairro{width:12%}
-colgroup .col-cat{width:14%}
-colgroup .col-mode{width:8%}
-colgroup .col-status{width:10%}
+colgroup .col-name{width:24%}
+colgroup .col-wa{width:15%}
+colgroup .col-bairro{width:14%}
+colgroup .col-cat{width:16%}
+colgroup .col-status{width:11%}
 colgroup .col-date{width:10%}
 thead{background:var(--surface)}
 th{padding:12px 16px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
@@ -120,6 +117,7 @@ tr:hover{background:rgba(124,92,252,.04)}
 .badge-quente{background:rgba(249,115,22,.2);color:#fb923c}
 .badge-frio{background:rgba(148,163,184,.15);color:#94a3b8}
 .badge-convertido{background:rgba(34,197,94,.2);color:#22c55e}
+.badge-falhou{background:rgba(239,68,68,.15);color:#ef4444}
 .wa-link{color:var(--green);text-decoration:none;font-weight:500}
 .wa-link:hover{text-decoration:underline}
 
@@ -348,21 +346,16 @@ tr:hover{background:rgba(124,92,252,.04)}
     <div class="funnel-title">📈 Funil de Conversão</div>
     <div class="funnel-steps" id="funnelSteps">
       <div class="funnel-step"><div class="funnel-bar" id="funnelTotal" style="background:var(--accent)">—</div><div class="funnel-label">Total</div><div class="funnel-pct" id="funnelTotalPct">100%</div></div>
+      <div class="funnel-arrow">›</div>
       <div class="funnel-step"><div class="funnel-bar" id="funnelSent" style="background:#3b82f6">—</div><div class="funnel-label">Enviados</div><div class="funnel-pct" id="funnelSentPct">—</div></div>
+      <div class="funnel-arrow">›</div>
       <div class="funnel-step"><div class="funnel-bar" id="funnelHot" style="background:#fb923c">—</div><div class="funnel-label">🔥 Quentes</div><div class="funnel-pct" id="funnelHotPct">—</div></div>
+      <div class="funnel-arrow">›</div>
       <div class="funnel-step"><div class="funnel-bar" id="funnelConverted" style="background:#22c55e">—</div><div class="funnel-label">✅ Convertidos</div><div class="funnel-pct" id="funnelConvertedPct">—</div></div>
     </div>
   </div>
 
   <div class="filters">
-    <div class="filter-group">
-      <label>Modo</label>
-      <select id="filterMode" onchange="onModeChange()">
-        <option value="">Todos</option>
-        <option value="Zappy">🍔 Zappy</option>
-        <option value="Lojaky">🛒 Lojaky</option>
-      </select>
-    </div>
     <div class="filter-group">
       <label>Status</label>
       <select id="filterStatus" onchange="loadData()">
@@ -372,6 +365,7 @@ tr:hover{background:rgba(124,92,252,.04)}
         <option value="Quente">🔥 Quente</option>
         <option value="Frio">🧊 Frio</option>
         <option value="Convertido">✅ Convertido</option>
+        <option value="Falhou">❌ Falhou</option>
       </select>
     </div>
     <div class="filter-group">
@@ -408,12 +402,12 @@ tr:hover{background:rgba(124,92,252,.04)}
     <table>
       <colgroup>
         <col class="col-id"><col class="col-name"><col class="col-wa"><col class="col-bairro">
-        <col class="col-cat"><col class="col-mode"><col class="col-status"><col class="col-date">
+        <col class="col-cat"><col class="col-status"><col class="col-date">
       </colgroup>
       <thead>
         <tr>
           <th>#</th><th>Negócio</th><th>WhatsApp</th><th>Bairro</th>
-          <th>Categoria</th><th>Modo</th><th>Status</th><th>Data</th>
+          <th>Categoria</th><th>Status</th><th>Data</th>
         </tr>
       </thead>
       <tbody id="leadsBody"></tbody>
@@ -430,19 +424,11 @@ tr:hover{background:rgba(124,92,252,.04)}
 <script>
 let allLeads = [];
 let whatsAppOnly = true;
+let currentScraperMode = 'zappy';
 
 function getSelectedMode() {
-  return document.getElementById('filterMode').value;
-}
-
-function onModeChange() {
-  const mode = getSelectedMode();
-  console.log('onModeChange called - mode:', mode);
-  const h1 = document.querySelector('h1');
-  if (mode === 'Zappy') h1.innerHTML = '+Leads <span>🍔 Zappy</span>';
-  else if (mode === 'Lojaky') h1.innerHTML = '+Leads <span>🛒 Lojaky</span>';
-  else h1.innerHTML = '+Leads <span>Painel</span>';
-  loadData();
+  // Auto-filter by the active scraper mode
+  return currentScraperMode === 'lojaky' ? 'Lojaky' : 'Zappy';
 }
 
 function updateModeBadge(scraperMode) {
@@ -616,14 +602,10 @@ async function loadSettings() {
     const res = await fetch('/api/settings');
     const data = await res.json();
     const scraperMode = data.mode || 'zappy';
+    currentScraperMode = scraperMode;
     document.getElementById('scraperMode').value = scraperMode;
     updateModeBadge(scraperMode);
-
-    // Auto-select the display filter to match the scraper mode
-    const filterModeEl = document.getElementById('filterMode');
-    const filterVal = scraperMode === 'lojaky' ? 'Lojaky' : 'Zappy';
-    filterModeEl.value = filterVal;
-    onModeChange();
+    loadData();
 
     // Load disabled neighborhoods
     disabledNeighborhoods = data.disabled_neighborhoods || {};
@@ -718,11 +700,10 @@ async function saveSettings() {
     setTimeout(function() { status.classList.remove('show'); }, 2500);
     showToast('✅ Configurações salvas com sucesso!', 'success');
 
-    // Sync display filter and mode badge with new scraper mode
+    // Sync display mode badge with new scraper mode
+    currentScraperMode = mode;
     updateModeBadge(mode);
-    const filterModeEl = document.getElementById('filterMode');
-    filterModeEl.value = mode === 'lojaky' ? 'Lojaky' : 'Zappy';
-    onModeChange();
+    loadData();
 
     loadScraperInfo();
   } catch (e) { showToast('❌ Erro ao salvar: ' + e.message, 'warning'); }
@@ -798,19 +779,32 @@ function renderFunnel(s) {
   var quentes = (s.quente || 0) + (s.convertido || 0);
   var convertidos = s.convertido || 0;
 
+  function fmtPct(n, d) {
+    if (!d) return '0%';
+    var p = n / d * 100;
+    if (p === 0) return '0%';
+    if (p < 1) return p.toFixed(1) + '%';
+    return Math.round(p) + '%';
+  }
   var bars = [
-    {el: 'funnelTotal', pctEl: 'funnelTotalPct', val: total, pct: 100},
-    {el: 'funnelSent', pctEl: 'funnelSentPct', val: enviados, pct: total ? Math.round(enviados/total*100) : 0},
-    {el: 'funnelHot', pctEl: 'funnelHotPct', val: quentes, pct: total ? Math.round(quentes/total*100) : 0},
-    {el: 'funnelConverted', pctEl: 'funnelConvertedPct', val: convertidos, pct: total ? Math.round(convertidos/total*100) : 0}
+    {el: 'funnelTotal', pctEl: 'funnelTotalPct', val: total, pct: 100, pctStr: '100%'},
+    {el: 'funnelSent', pctEl: 'funnelSentPct', val: enviados, pct: total ? enviados/total*100 : 0, pctStr: fmtPct(enviados, total)},
+    {el: 'funnelHot', pctEl: 'funnelHotPct', val: quentes, pct: total ? quentes/total*100 : 0, pctStr: fmtPct(quentes, total)},
+    {el: 'funnelConverted', pctEl: 'funnelConvertedPct', val: convertidos, pct: total ? convertidos/total*100 : 0, pctStr: fmtPct(convertidos, total)}
   ];
 
   bars.forEach(function(b) {
-    document.getElementById(b.el).textContent = b.val.toLocaleString();
-    document.getElementById(b.pctEl).textContent = b.pct + '%';
-    // Scale bar width proportionally (min 15% for visibility)
-    var width = Math.max(15, b.pct);
-    document.getElementById(b.el).style.width = width + '%';
+    var el = document.getElementById(b.el);
+    el.textContent = b.val.toLocaleString();
+    document.getElementById(b.pctEl).textContent = b.pctStr || (b.pct + '%');
+    // Width is relative to the total bar — scale proportionally
+    // Total bar is always 100%, others proportional to their percentage
+    if (b.pct >= 100) {
+      el.style.width = '100%';
+    } else {
+      // Min width ensures the bar is always visible
+      el.style.width = 'auto';
+    }
   });
 }
 
@@ -842,28 +836,23 @@ function renderTable(leads) {
   document.getElementById('tableCount').textContent = '(' + leads.length.toLocaleString() + ')';
   const tbody = document.getElementById('leadsBody');
   if (!leads.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:48px">Nenhum lead encontrado</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:48px">Nenhum lead encontrado</td></tr>';
     return;
   }
   tbody.innerHTML = leads.map(function(l) {
-    var statusMap = {'Pending':'badge-pending','Sent':'badge-sent','Quente':'badge-quente','Frio':'badge-frio','Convertido':'badge-convertido'};
-    var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'🔥 Quente','Frio':'🧊 Frio','Convertido':'✅ Convertido'};
+    var statusMap = {'Pending':'badge-pending','Sent':'badge-sent','Quente':'badge-quente','Frio':'badge-frio','Convertido':'badge-convertido','Falhou':'badge-falhou'};
+    var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'🔥 Quente','Frio':'🧊 Frio','Convertido':'✅ Convertido','Falhou':'❌ Falhou'};
     var statusClass = statusMap[l.status] || 'badge-pending';
     var statusLabel = labelMap[l.status] || l.status;
     var waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
     var waLink = l.whatsapp ? 'https://wa.me/' + l.whatsapp : '#';
     var date = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '\u2014';
-    var saas = l.target_saas || '—';
-    var saasIcon = saas === 'Zappy' ? '🍔' : saas === 'Lojaky' ? '🛒' : '';
-    var saasBg = saas === 'Zappy' ? 'rgba(245,158,11,.15)' : saas === 'Lojaky' ? 'rgba(6,182,212,.15)' : 'transparent';
-    var saasColor = saas === 'Zappy' ? 'var(--amber)' : saas === 'Lojaky' ? 'var(--cyan)' : 'var(--text-muted)';
     return '<tr>'
       + '<td>' + l.id + '</td>'
       + '<td><strong>' + escHtml(l.business_name) + '</strong></td>'
       + '<td><a class="wa-link" href="' + waLink + '" target="_blank">' + waFormatted + '</a></td>'
       + '<td>' + escHtml(l.neighborhood || '\u2014') + '</td>'
       + '<td>' + escHtml(l.category || '\u2014') + '</td>'
-      + '<td><span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75rem;font-weight:600;background:' + saasBg + ';color:' + saasColor + '">' + saasIcon + ' ' + escHtml(saas) + '</span></td>'
       + '<td><span class="badge ' + statusClass + '">' + statusLabel + '</span></td>'
       + '<td>' + date + '</td>'
       + '</tr>';
@@ -941,7 +930,6 @@ function sortLeads(leads) {
 }
 
 loadSettings();
-loadData();
 setInterval(loadData, 30000);
 
 function toggleTable() {
@@ -1005,7 +993,15 @@ async def _handle_api_leads(request: web.Request) -> web.Response:
                status, target_saas, created_at
         FROM leads_olinda
         {where_clause}
-        ORDER BY created_at DESC
+        ORDER BY
+          CASE status
+            WHEN 'Quente'     THEN 0
+            WHEN 'Sent'       THEN 1
+            WHEN 'Convertido' THEN 2
+            WHEN 'Frio'       THEN 3
+            ELSE 4
+          END,
+          created_at DESC
         LIMIT 1000;
     """
     async with pool.acquire() as conn:
@@ -1104,35 +1100,91 @@ async def _handle_clear_leads(request: web.Request) -> web.Response:
     return web.json_response({"deleted": count})
 
 
-async def _handle_waha_webhook(request: web.Request) -> web.Response:
-    """WAHA webhook — receives incoming WhatsApp messages.
-    When a lead replies, auto-marks them as 'Quente' (hot)."""
+async def _handle_reset_sent(request: web.Request) -> web.Response:
+    """Bulk-update lead status.  ?from=X&to=Y (defaults: from=Sent, to=Falhou)."""
+    from_status = request.query.get("from", "Sent")
+    to_status = request.query.get("to", "Falhou")
+    valid = {"Pending", "Sent", "Quente", "Frio", "Convertido", "Falhou"}
+    if from_status not in valid or to_status not in valid:
+        return web.json_response({"error": "invalid status"}, status=400)
+    pool: asyncpg.Pool = request.app["db_pool"]
+    async with pool.acquire() as conn:
+        result = await conn.execute(
+            "UPDATE leads_olinda SET status = $1 WHERE status = $2", to_status, from_status
+        )
+        count = int(result.split()[-1]) if result else 0
+    logger.info("Updated %d leads from '%s' to '%s'", count, from_status, to_status)
+    return web.json_response({"updated": count, "from": from_status, "to": to_status})
+
+
+async def _handle_whatsapp_webhook_verify(request: web.Request) -> web.Response:
+    """WhatsApp Cloud API webhook verification (GET).
+    Meta sends a GET request with hub.mode, hub.verify_token, and hub.challenge.
+    We respond with the challenge to verify the webhook."""
+    mode = request.query.get("hub.mode", "")
+    token = request.query.get("hub.verify_token", "")
+    challenge = request.query.get("hub.challenge", "")
+
+    # Accept any verify_token for now (you can set WHATSAPP_VERIFY_TOKEN env to restrict)
+    import os
+    expected_token = os.getenv("WHATSAPP_VERIFY_TOKEN", "olinda-prospector")
+
+    if mode == "subscribe" and token == expected_token:
+        logger.info("WhatsApp webhook verified successfully")
+        return web.Response(text=challenge, content_type="text/plain")
+
+    logger.warning("WhatsApp webhook verification failed (mode=%s, token=%s)", mode, token)
+    return web.Response(text="Verification failed", status=403)
+
+
+async def _handle_whatsapp_webhook(request: web.Request) -> web.Response:
+    """WhatsApp Cloud API webhook — receives incoming messages.
+    When a lead replies, auto-marks them as 'Quente' (hot).
+
+    Meta webhook payload structure:
+    {
+        "object": "whatsapp_business_account",
+        "entry": [{
+            "changes": [{
+                "value": {
+                    "messages": [{
+                        "from": "5581999887766",
+                        "type": "text",
+                        "text": {"body": "..."}
+                    }]
+                },
+                "field": "messages"
+            }]
+        }]
+    }
+    """
     try:
         data = await request.json()
     except Exception:
         return web.json_response({"ok": False, "error": "invalid json"}, status=400)
 
     pool: asyncpg.Pool = request.app["db_pool"]
-    event = data.get("event", "")
 
-    # WAHA sends 'message' event for incoming messages
-    if event in ("message", "message.any"):
-        payload = data.get("payload", {})
-        # Only process incoming messages (not our own outgoing ones)
-        if payload.get("fromMe", True):
-            return web.json_response({"ok": True, "action": "ignored_own_message"})
+    # Process each entry in the webhook payload
+    entries = data.get("entry", [])
+    for entry in entries:
+        for change in entry.get("changes", []):
+            value = change.get("value", {})
+            messages = value.get("messages", [])
 
-        chat_id = payload.get("from", "")
-        # Extract phone digits from chat ID (e.g. '5581999887766@c.us' -> '5581999887766')
-        phone = "".join(c for c in chat_id if c.isdigit())
+            for msg in messages:
+                # "from" contains the sender's phone number (digits only)
+                phone = msg.get("from", "")
+                if phone:
+                    count = await mark_lead_hot_by_phone(pool, phone)
+                    if count > 0:
+                        msg_type = msg.get("type", "unknown")
+                        logger.info(
+                            "🔥 WhatsApp webhook: %s replied (%s) — marked as Quente",
+                            phone, msg_type,
+                        )
 
-        if phone:
-            count = await mark_lead_hot_by_phone(pool, phone)
-            if count > 0:
-                logger.info("🔥 WAHA webhook: %s replied — marked as Quente", phone)
-                return web.json_response({"ok": True, "action": "marked_hot", "phone": phone})
-
-    return web.json_response({"ok": True, "action": "no_match"})
+    return web.json_response({"ok": True})
 
 
 async def _handle_get_settings(request: web.Request) -> web.Response:
@@ -1294,10 +1346,12 @@ def create_dashboard_app(pool: asyncpg.Pool, runtime_settings: dict | None = Non
     app.router.add_get("/api/stats", _handle_api_stats)
     app.router.add_get("/api/export/csv", _handle_export_csv)
     app.router.add_delete("/api/leads/clear", _handle_clear_leads)
+    app.router.add_post("/api/leads/reset-sent", _handle_reset_sent)
     app.router.add_get("/api/settings", _handle_get_settings)
     app.router.add_post("/api/settings", _handle_post_settings)
     app.router.add_get("/api/scraper-info", _handle_scraper_info)
-    app.router.add_post("/api/waha/webhook", _handle_waha_webhook)
+    app.router.add_get("/api/whatsapp/webhook", _handle_whatsapp_webhook_verify)
+    app.router.add_post("/api/whatsapp/webhook", _handle_whatsapp_webhook)
 
     # Load persisted settings from DB on startup
     app.on_startup.append(_load_settings_from_db)

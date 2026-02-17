@@ -39,9 +39,9 @@ services:
       PROSPECTOR_MODE: ${PROSPECTOR_MODE:-zappy}
       DASHBOARD_PORT: 8080
       PROXY_LIST: ${PROXY_LIST:-}
-      WAHA_API_URL: ${WAHA_API_URL:-}
-      WAHA_API_KEY: ${WAHA_API_KEY:-}
-      WAHA_SESSION: ${WAHA_SESSION:-default}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+      WHATSAPP_PHONE_ID: ${WHATSAPP_PHONE_ID:-}
+      WHATSAPP_BUSINESS_ID: ${WHATSAPP_BUSINESS_ID:-}
       MESSAGE_DELAY: ${MESSAGE_DELAY:-3.0}
     restart: unless-stopped
     networks:

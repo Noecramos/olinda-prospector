@@ -1,6 +1,6 @@
 """
 Lead Dispatcher — fetches pending leads from PostgreSQL and:
-  1. Sends a WhatsApp prospecting message via WAHA
+  1. Sends a WhatsApp prospecting message via the official Meta Cloud API
   2. Optionally POSTs the lead to an n8n webhook
   3. Updates lead status to 'Sent'
 
@@ -26,7 +26,7 @@ import aiohttp
 import asyncpg
 
 from db import fetch_pending_leads, mark_leads_sent
-from services.waha import WahaClient, get_pitch_for_lead
+from services.whatsapp import WhatsAppCloudClient, get_pitch_for_lead
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +170,7 @@ async def _send_to_webhook(
 
 
 async def _send_whatsapp_messages(
-    waha: WahaClient,
+    whatsapp: WhatsAppCloudClient,
     leads: list[dict[str, Any]],
 ) -> list[int]:
     """
@@ -202,9 +202,10 @@ async def _send_whatsapp_messages(
 
             message = get_pitch_for_lead(name, target)
 
-            result = await waha.send_text(phone, message, session=session)
+            result = await whatsapp.send_text(phone, message, session=session)
 
             if "error" not in result:
+                # Success — message delivered
                 success_ids.append(lead["id"])
                 _daily_count += 1
                 _hourly_count += 1
@@ -214,6 +215,16 @@ async def _send_whatsapp_messages(
                     _daily_count, DAILY_MESSAGE_LIMIT,
                     _hourly_count, HOURLY_MESSAGE_LIMIT,
                 )
+            elif result.get("error") == "non_retryable":
+                # Phone not on WhatsApp — mark as sent to avoid
+                # re-attempting this lead in every future dispatch cycle
+                success_ids.append(lead["id"])
+                logger.info(
+                    "⚠️ [%d/%d] Skipped %s (%s) — number not on WhatsApp",
+                    i + 1, len(leads), name, phone,
+                )
+                # No delay needed for skipped numbers
+                continue
             else:
                 logger.warning(
                     "❌ WhatsApp failed for %s (%s): %s",
@@ -233,19 +244,20 @@ async def dispatch_leads(
     pool: asyncpg.Pool,
     webhook_url: str = "",
     api_key: str = "",
-    waha: WahaClient | None = None,
+    whatsapp: WhatsAppCloudClient | None = None,
     message_delay: float = 3.0,  # kept for compatibility, actual delay is random
+    target_saas: str | None = None,
 ) -> int:
     """
     Main dispatcher entry point.
     1. Fetch pending leads (only those with WhatsApp numbers)
-    2. Send WhatsApp messages via WAHA (if configured)
+    2. Send WhatsApp messages via official Meta Cloud API (if configured)
     3. POST to n8n webhook (if configured)
     4. Mark as 'Sent'
     Returns total number of leads dispatched.
     """
-    if not webhook_url and not waha:
-        logger.warning("Neither WAHA nor N8N_WEBHOOK_URL configured — skipping dispatch")
+    if not webhook_url and not whatsapp:
+        logger.warning("Neither WhatsApp Cloud API nor N8N_WEBHOOK_URL configured — skipping dispatch")
         return 0
 
     # Check business hours before dispatching
@@ -264,20 +276,20 @@ async def dispatch_leads(
     total_dispatched = 0
 
     while can_send_more() and is_business_hours():
-        leads = await fetch_pending_leads(pool, limit=BATCH_SIZE)
+        leads = await fetch_pending_leads(pool, limit=BATCH_SIZE, target_saas=target_saas)
         if not leads:
             logger.info("📭 No pending leads with WhatsApp numbers to dispatch")
             break
 
         sent_ids: list[int] = []
 
-        # ── WhatsApp messages via WAHA ──
-        if waha:
-            waha_ids = await _send_whatsapp_messages(waha, leads)
-            sent_ids.extend(waha_ids)
-            logger.info("WAHA: %d/%d messages sent", len(waha_ids), len(leads))
+        # ── WhatsApp messages via Meta Cloud API ──
+        if whatsapp:
+            wa_ids = await _send_whatsapp_messages(whatsapp, leads)
+            sent_ids.extend(wa_ids)
+            logger.info("WhatsApp Cloud API: %d/%d messages sent", len(wa_ids), len(leads))
         else:
-            # If no WAHA, all leads are eligible for webhook dispatch
+            # If no WhatsApp client, all leads are eligible for webhook dispatch
             sent_ids = [l["id"] for l in leads]
 
         # ── n8n webhook ──

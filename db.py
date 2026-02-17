@@ -116,12 +116,23 @@ async def upsert_lead(
     return inserted
 
 
-async def fetch_pending_leads(pool: asyncpg.Pool, limit: int = 50) -> list[dict[str, Any]]:
-    """Fetch up to `limit` leads with status 'Pending', excluding phones already messaged."""
-    query = """
+async def fetch_pending_leads(pool: asyncpg.Pool, limit: int = 50, target_saas: str | None = None) -> list[dict[str, Any]]:
+    """Fetch up to `limit` leads with status 'Pending', excluding phones already messaged.
+    If target_saas is provided, only fetch leads matching that mode (e.g. 'Zappy' or 'Lojaky').
+    """
+    conditions = ["status = 'Pending'", "whatsapp IS NOT NULL"]
+    params: list[Any] = [limit]
+    
+    if target_saas:
+        conditions.append(f"target_saas = ${len(params) + 1}")
+        params.append(target_saas)
+    
+    where = " AND ".join(conditions)
+    
+    query = f"""
         SELECT id, business_name, whatsapp, neighborhood, category, google_rating, target_saas, created_at
         FROM leads_olinda l
-        WHERE status = 'Pending' AND whatsapp IS NOT NULL
+        WHERE {where}
           AND NOT EXISTS (
               SELECT 1 FROM leads_olinda dup
               WHERE dup.whatsapp = l.whatsapp
@@ -132,7 +143,7 @@ async def fetch_pending_leads(pool: asyncpg.Pool, limit: int = 50) -> list[dict[
         LIMIT $1;
     """
     async with pool.acquire() as conn:
-        rows = await conn.fetch(query, limit)
+        rows = await conn.fetch(query, *params)
     return [dict(r) for r in rows]
 
 

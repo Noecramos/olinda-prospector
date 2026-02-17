@@ -18,6 +18,14 @@ RETRY_BACKOFF = 2
 # Delay between messages to avoid rate-limiting (seconds)
 MESSAGE_DELAY = 3.0
 
+# Errors that should NOT be retried (phone doesn't have WhatsApp, etc.)
+NON_RETRYABLE_ERRORS = [
+    "No LID for user",
+    "number does not exist",
+    "not registered",
+    "invalid jid",
+]
+
 
 class WahaClient:
     """Async WAHA client for sending WhatsApp messages."""
@@ -37,6 +45,56 @@ class WahaClient:
         """Convert phone number to WAHA chat ID format: 5581999999999@c.us"""
         digits = "".join(c for c in phone if c.isdigit())
         return f"{digits}@c.us"
+
+    @staticmethod
+    def _is_non_retryable(body: dict) -> bool:
+        """Check if the error response indicates a non-retryable error."""
+        error_msg = ""
+        # Check exception.message (WAHA 500 errors)
+        exc = body.get("exception", {})
+        if isinstance(exc, dict):
+            error_msg = exc.get("message", "")
+        # Check top-level message
+        if not error_msg:
+            error_msg = str(body.get("message", ""))
+
+        error_lower = error_msg.lower()
+        return any(err.lower() in error_lower for err in NON_RETRYABLE_ERRORS)
+
+    async def check_number_exists(
+        self,
+        phone: str,
+        session: aiohttp.ClientSession | None = None,
+    ) -> bool:
+        """Check if a phone number is registered on WhatsApp."""
+        chat_id = self._format_chat_id(phone)
+        endpoint = f"{self.api_url}/api/checkNumberStatus"
+        payload = {"session": self.session, "phone": chat_id}
+
+        own_session = session is None
+        if own_session:
+            session = aiohttp.ClientSession()
+
+        try:
+            async with session.get(
+                endpoint,
+                params={"session": self.session, "phone": chat_id},
+                headers=self._headers(),
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                if resp.status < 300:
+                    body = await resp.json()
+                    # WAHA returns {numberExists: true/false}
+                    return body.get("numberExists", False)
+                else:
+                    # API might not support this endpoint, assume exists
+                    return True
+        except Exception:
+            # On error, assume the number exists (will be caught during send)
+            return True
+        finally:
+            if own_session:
+                await session.close()
 
     async def send_text(
         self,
@@ -67,6 +125,14 @@ class WahaClient:
                             logger.info("Message sent to %s (status %d)", phone, resp.status)
                             return body
                         else:
+                            # Check if this is a non-retryable error
+                            if self._is_non_retryable(body):
+                                logger.warning(
+                                    "WAHA non-retryable error for %s: %s (skipping retries)",
+                                    phone, body.get("exception", {}).get("message", body),
+                                )
+                                return {"error": "non_retryable", "detail": str(body)}
+
                             logger.warning(
                                 "WAHA returned %d for %s (attempt %d): %s",
                                 resp.status, phone, attempt, body,
