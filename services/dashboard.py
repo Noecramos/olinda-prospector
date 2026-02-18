@@ -834,7 +834,8 @@ function populateNeighborhoodFilter(neighborhoods) {
 
 function buildZappyPitch(businessName) {
   var NL = String.fromCharCode(10);
-  return 'Ol' + String.fromCharCode(225) + '! ' + String.fromCodePoint(0x1F44B) + NL
+  return 'https://zappy.noviapp.com.br' + NL + NL
+    + 'Ol' + String.fromCharCode(225) + '! ' + String.fromCodePoint(0x1F44B) + NL
     + 'Somos do Zappy e encontramos sua empresa no Google.' + NL
     + 'Parab' + String.fromCharCode(233) + 'ns pelo trabalho! ' + String.fromCodePoint(0x1F389) + NL
     + 'O Zappy ' + String.fromCharCode(233) + ' uma plataforma de gest' + String.fromCharCode(227) + 'o completa para Delivery e muito mais:' + NL + NL
@@ -842,7 +843,6 @@ function buildZappyPitch(businessName) {
     + String.fromCodePoint(0x1F4CA) + ' Controlar estoque e Pedidos em tempo real' + NL
     + String.fromCodePoint(0x1F4B0) + ' Sem taxas diferente de outros apps de delivery Voc' + String.fromCharCode(234) + ' mant' + String.fromCharCode(233) + 'm *100% do lucro!*' + NL + NL
     + 'Clique abaixo para dar uma olhada! ' + String.fromCodePoint(0x1F60A) + NL + NL
-    + 'https://www.zappy.noviapp.com.br' + NL + NL
     + 'Fa' + String.fromCharCode(231) + 'a seu cadastro!' + NL + NL
     + 'https://zappy.noviapp.com.br/register' + NL + NL
     + 'Boas Vendas !!!!';
