@@ -891,7 +891,7 @@ function renderTable(leads) {
   tbody.innerHTML = pageLeads.map(function(l) {
     try {
       var statusMap = {'Pending':'badge-pending','Sent':'badge-sent','Quente':'badge-quente','Frio':'badge-frio','Convertido':'badge-convertido','Falhou':'badge-falhou'};
-      var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'\ud83d\udd25 Quente','Frio':'\ud83e\uddca Frio','Convertido':'\u2705 Convertido','Falhou':'\u274c Falhou'};
+      var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':String.fromCodePoint(0x1F525)+' Quente','Frio':String.fromCodePoint(0x1F9CA)+' Frio','Convertido':String.fromCodePoint(0x2705)+' Convertido','Falhou':String.fromCodePoint(0x274C)+' Falhou'};
       var statusClass = statusMap[l.status] || 'badge-pending';
       var statusLabel = labelMap[l.status] || l.status;
       var waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
