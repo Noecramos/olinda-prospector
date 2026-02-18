@@ -1437,6 +1437,7 @@ def create_dashboard_app(pool: asyncpg.Pool, runtime_settings: dict | None = Non
     app.router.add_delete("/api/leads/clear", _handle_clear_leads)
     app.router.add_post("/api/leads/reset-sent", _handle_reset_sent)
     app.router.add_patch("/api/leads/{id}/status", _handle_update_lead_status)
+    app.router.add_post("/api/leads/{id}/status", _handle_update_lead_status)
     app.router.add_get("/api/settings", _handle_get_settings)
     app.router.add_post("/api/settings", _handle_post_settings)
     app.router.add_get("/api/scraper-info", _handle_scraper_info)
