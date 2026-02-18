@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 
 from aiohttp import web
@@ -163,17 +164,22 @@ async def main() -> None:
     # ── APScheduler ──
     scheduler = AsyncIOScheduler()
 
-    # Scraper job — long-running, runs on its own schedule
-    scheduler.add_job(
-        _run_scrape,
-        "interval",
-        seconds=settings.scrape_interval,
-        args=[pool, settings, proxy_rotator],
-        id="scrape",
-        name="Scrape Leads",
-        max_instances=1,
-        misfire_grace_time=60,
-    )
+    # Scraper job — controlled by SCRAPER_ENABLED env var
+    scraper_enabled = os.getenv("SCRAPER_ENABLED", "false").lower() in ("true", "1", "yes")
+    if scraper_enabled:
+        scheduler.add_job(
+            _run_scrape,
+            "interval",
+            seconds=settings.scrape_interval,
+            args=[pool, settings, proxy_rotator],
+            id="scrape",
+            name="Scrape Leads",
+            max_instances=1,
+            misfire_grace_time=60,
+        )
+        logger.info("🔍 Scraper ENABLED — running every %d s", settings.scrape_interval)
+    else:
+        logger.info("⏹️ Scraper DISABLED — using existing leads only")
 
     # Dispatch job — fast, runs every 5 minutes independently
     dispatch_interval = 300  # 5 minutes
@@ -200,14 +206,15 @@ async def main() -> None:
     )
     scheduler.start()
     logger.info(
-        "Scheduler started — scrape every %d s, dispatch every %d s, cold check every 2h",
-        settings.scrape_interval, dispatch_interval,
+        "Scheduler started — dispatch every %d s, cold check every 2h",
+        dispatch_interval,
     )
 
-    # Run first dispatch immediately (scraper can start on schedule)
+    # Run first dispatch immediately
     asyncio.create_task(_run_dispatch(pool, settings, whatsapp))
-    # Also start scraper immediately
-    asyncio.create_task(_run_scrape(pool, settings, proxy_rotator))
+    # Only start scraper if enabled
+    if scraper_enabled:
+        asyncio.create_task(_run_scrape(pool, settings, proxy_rotator))
 
     # ── Dashboard Web Server ──
     dashboard_app = create_dashboard_app(pool, runtime_settings=_runtime_settings)
