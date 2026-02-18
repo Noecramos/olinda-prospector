@@ -832,6 +832,41 @@ function populateNeighborhoodFilter(neighborhoods) {
   });
 }
 
+function buildZappyPitch(businessName) {
+  return "Olá! 👋\n"
+    + "Somos do Zappy e encontramos sua empresa no Google.\n"
+    + "Parabéns pelo trabalho! 🎉\n"
+    + "O Zappy é uma plataforma de gestão completa para Delivery e muito mais:\n\n"
+    + "📱 Receber pedidos por WhatsApp automaticamente\n"
+    + "📊 Controlar estoque e Pedidos em tempo real\n"
+    + "💰 Sem taxas diferente de outros apps de delivery Você mantém *100% do lucro!*\n\n"
+    + "Clique abaixo para dar uma olhada! 😊\n\n"
+    + "Faça seu cadastro!\n\n"
+    + "Boas Vendas !!!!";
+}
+
+function buildLojakyPitch(businessName) {
+  return "Olá! 👋\n\n"
+    + "Somos do Lojaky e encontrei seu negócio no Google. "
+    + "Parabéns pelo trabalho! 🎉\n\n"
+    + "O Lojaky é uma plataforma de vendas online completa para "
+    + "lojas e muito mais, que ajuda a:\n\n"
+    + "🛒 Vender pelo WhatsApp com Loja Online\n"
+    + "📦 Controlar estoque e vendas em tempo real\n"
+    + "💰 Sem taxas Você mantém 100% do lucro!\n\n"
+    + "Segue o link para dar uma olhada! 😊\n\n"
+    + "https://lojaky.noviapp.com.br/\n\n"
+    + "Se tiver interesse faça seu cadastro sem compromisso aqui: "
+    + "https://lojaky.noviapp.com.br/register\n\n"
+    + "Boas Vendas !!!!";
+}
+
+function buildWaLink(phone, businessName) {
+  if (!phone) return '#';
+  var msg = currentScraperMode === 'lojaky' ? buildLojakyPitch(businessName) : buildZappyPitch(businessName);
+  return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+}
+
 function renderTable(leads) {
   document.getElementById('tableCount').textContent = '(' + leads.length.toLocaleString() + ')';
   const tbody = document.getElementById('leadsBody');
@@ -845,7 +880,7 @@ function renderTable(leads) {
     var statusClass = statusMap[l.status] || 'badge-pending';
     var statusLabel = labelMap[l.status] || l.status;
     var waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
-    var waLink = l.whatsapp ? 'https://wa.me/' + l.whatsapp : '#';
+    var waLink = buildWaLink(l.whatsapp, l.business_name);
     var date = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '\u2014';
     return '<tr>'
       + '<td>' + l.id + '</td>'
