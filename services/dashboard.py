@@ -1070,7 +1070,7 @@ async def _handle_api_leads(request: web.Request) -> web.Response:
             ELSE 4
           END,
           created_at DESC
-        LIMIT 1000;
+        LIMIT 5000;
     """
     async with pool.acquire() as conn:
         rows = await conn.fetch(query, *params)
