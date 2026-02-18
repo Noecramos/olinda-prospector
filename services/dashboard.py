@@ -875,22 +875,28 @@ function renderTable(leads) {
     return;
   }
   tbody.innerHTML = leads.map(function(l) {
-    var statusMap = {'Pending':'badge-pending','Sent':'badge-sent','Quente':'badge-quente','Frio':'badge-frio','Convertido':'badge-convertido','Falhou':'badge-falhou'};
-    var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'🔥 Quente','Frio':'🧊 Frio','Convertido':'✅ Convertido','Falhou':'❌ Falhou'};
-    var statusClass = statusMap[l.status] || 'badge-pending';
-    var statusLabel = labelMap[l.status] || l.status;
-    var waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
-    var waLink = buildWaLink(l.whatsapp, l.business_name);
-    var date = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '\u2014';
-    return '<tr>'
-      + '<td>' + l.id + '</td>'
-      + '<td><strong>' + escHtml(l.business_name) + '</strong></td>'
-      + '<td><a class="wa-link" href="' + waLink + '" target="_blank">' + waFormatted + '</a></td>'
-      + '<td>' + escHtml(l.neighborhood || '\u2014') + '</td>'
-      + '<td>' + escHtml(l.category || '\u2014') + '</td>'
-      + '<td><span class="badge ' + statusClass + '">' + statusLabel + '</span></td>'
-      + '<td>' + date + '</td>'
-      + '</tr>';
+    try {
+      var statusMap = {'Pending':'badge-pending','Sent':'badge-sent','Quente':'badge-quente','Frio':'badge-frio','Convertido':'badge-convertido','Falhou':'badge-falhou'};
+      var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'🔥 Quente','Frio':'🧊 Frio','Convertido':'✅ Convertido','Falhou':'❌ Falhou'};
+      var statusClass = statusMap[l.status] || 'badge-pending';
+      var statusLabel = labelMap[l.status] || l.status;
+      var waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
+      var waLink = buildWaLink(l.whatsapp, l.business_name || '');
+      var waLinkEsc = waLink.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      var date = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '\u2014';
+      return '<tr>'
+        + '<td>' + l.id + '</td>'
+        + '<td><strong>' + escHtml(l.business_name) + '</strong></td>'
+        + '<td><a class="wa-link" href="' + waLinkEsc + '" target="_blank">' + waFormatted + '</a></td>'
+        + '<td>' + escHtml(l.neighborhood || '\u2014') + '</td>'
+        + '<td>' + escHtml(l.category || '\u2014') + '</td>'
+        + '<td><span class="badge ' + statusClass + '">' + statusLabel + '</span></td>'
+        + '<td>' + date + '</td>'
+        + '</tr>';
+    } catch(e) {
+      console.error('Error rendering lead', l.id, e);
+      return '<tr><td colspan="7" style="color:var(--red)">Erro no lead #' + (l.id||'?') + '</td></tr>';
+    }
   }).join('');
 }
 
