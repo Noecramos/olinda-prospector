@@ -833,32 +833,44 @@ function populateNeighborhoodFilter(neighborhoods) {
 }
 
 function buildZappyPitch(businessName) {
-  return "Olá! 👋\n"
-    + "Somos do Zappy e encontramos sua empresa no Google.\n"
-    + "Parabéns pelo trabalho! 🎉\n"
-    + "O Zappy é uma plataforma de gestão completa para Delivery e muito mais:\n\n"
-    + "📱 Receber pedidos por WhatsApp automaticamente\n"
-    + "📊 Controlar estoque e Pedidos em tempo real\n"
-    + "💰 Sem taxas diferente de outros apps de delivery Você mantém *100% do lucro!*\n\n"
-    + "Clique abaixo para dar uma olhada! 😊\n\n"
-    + "Faça seu cadastro!\n\n"
-    + "Boas Vendas !!!!";
+  return [
+    'Ol\u00e1! \ud83d\udc4b',
+    'Somos do Zappy e encontramos sua empresa no Google.',
+    'Parab\u00e9ns pelo trabalho! \ud83c\udf89',
+    'O Zappy \u00e9 uma plataforma de gest\u00e3o completa para Delivery e muito mais:',
+    '',
+    '\ud83d\udcf1 Receber pedidos por WhatsApp automaticamente',
+    '\ud83d\udcca Controlar estoque e Pedidos em tempo real',
+    '\ud83d\udcb0 Sem taxas diferente de outros apps de delivery Voc\u00ea mant\u00e9m *100% do lucro!*',
+    '',
+    'Clique abaixo para dar uma olhada! \ud83d\ude0a',
+    '',
+    'Fa\u00e7a seu cadastro!',
+    '',
+    'Boas Vendas !!!!'
+  ].join(String.fromCharCode(10));
 }
 
 function buildLojakyPitch(businessName) {
-  return "Olá! 👋\n\n"
-    + "Somos do Lojaky e encontrei seu negócio no Google. "
-    + "Parabéns pelo trabalho! 🎉\n\n"
-    + "O Lojaky é uma plataforma de vendas online completa para "
-    + "lojas e muito mais, que ajuda a:\n\n"
-    + "🛒 Vender pelo WhatsApp com Loja Online\n"
-    + "📦 Controlar estoque e vendas em tempo real\n"
-    + "💰 Sem taxas Você mantém 100% do lucro!\n\n"
-    + "Segue o link para dar uma olhada! 😊\n\n"
-    + "https://lojaky.noviapp.com.br/\n\n"
-    + "Se tiver interesse faça seu cadastro sem compromisso aqui: "
-    + "https://lojaky.noviapp.com.br/register\n\n"
-    + "Boas Vendas !!!!";
+  return [
+    'Ol\u00e1! \ud83d\udc4b',
+    '',
+    'Somos do Lojaky e encontrei seu neg\u00f3cio no Google. Parab\u00e9ns pelo trabalho! \ud83c\udf89',
+    '',
+    'O Lojaky \u00e9 uma plataforma de vendas online completa para lojas e muito mais, que ajuda a:',
+    '',
+    '\ud83d\uded2 Vender pelo WhatsApp com Loja Online',
+    '\ud83d\udce6 Controlar estoque e vendas em tempo real',
+    '\ud83d\udcb0 Sem taxas Voc\u00ea mant\u00e9m 100% do lucro!',
+    '',
+    'Segue o link para dar uma olhada! \ud83d\ude0a',
+    '',
+    'https://lojaky.noviapp.com.br/',
+    '',
+    'Se tiver interesse fa\u00e7a seu cadastro sem compromisso aqui: https://lojaky.noviapp.com.br/register',
+    '',
+    'Boas Vendas !!!!'
+  ].join(String.fromCharCode(10));
 }
 
 function buildWaLink(phone, businessName) {
