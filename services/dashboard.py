@@ -413,6 +413,8 @@ tr:hover{background:rgba(124,92,252,.04)}
       <tbody id="leadsBody"></tbody>
     </table>
     </div>
+    <div id="pagination" class="pagination" style="display:flex;justify-content:center;align-items:center;gap:8px;padding:12px 0;flex-wrap:wrap">
+    </div>
     </div>
   </div>
 
@@ -868,17 +870,28 @@ function buildWaLink(phone, businessName) {
   return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
 }
 
+var currentPage = 1;
+var PAGE_SIZE = 100;
+var currentFilteredLeads = [];
+
 function renderTable(leads) {
+  currentFilteredLeads = leads;
   document.getElementById('tableCount').textContent = '(' + leads.length.toLocaleString() + ')';
+  var totalPages = Math.ceil(leads.length / PAGE_SIZE) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  var start = (currentPage - 1) * PAGE_SIZE;
+  var end = start + PAGE_SIZE;
+  var pageLeads = leads.slice(start, end);
   const tbody = document.getElementById('leadsBody');
   if (!leads.length) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:48px">Nenhum lead encontrado</td></tr>';
+    document.getElementById('pagination').innerHTML = '';
     return;
   }
-  tbody.innerHTML = leads.map(function(l) {
+  tbody.innerHTML = pageLeads.map(function(l) {
     try {
       var statusMap = {'Pending':'badge-pending','Sent':'badge-sent','Quente':'badge-quente','Frio':'badge-frio','Convertido':'badge-convertido','Falhou':'badge-falhou'};
-      var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'🔥 Quente','Frio':'🧊 Frio','Convertido':'✅ Convertido','Falhou':'❌ Falhou'};
+      var labelMap = {'Pending':'Pendente','Sent':'Enviado','Quente':'\ud83d\udd25 Quente','Frio':'\ud83e\uddca Frio','Convertido':'\u2705 Convertido','Falhou':'\u274c Falhou'};
       var statusClass = statusMap[l.status] || 'badge-pending';
       var statusLabel = labelMap[l.status] || l.status;
       var waFormatted = l.whatsapp ? '+' + l.whatsapp.slice(0,2) + ' (' + l.whatsapp.slice(2,4) + ') ' + l.whatsapp.slice(4,9) + '-' + l.whatsapp.slice(9) : '\u2014';
@@ -899,6 +912,25 @@ function renderTable(leads) {
       return '<tr><td colspan="7" style="color:var(--red)">Erro no lead #' + (l.id||'?') + '</td></tr>';
     }
   }).join('');
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  var pg = document.getElementById('pagination');
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  var html = '';
+  html += '<button onclick="goToPage(' + (currentPage - 1) + ')" ' + (currentPage===1?'disabled':'') + ' style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer">&laquo; Anterior</button>';
+  html += '<span style="color:var(--text-muted);font-size:.85rem">P' + String.fromCharCode(225) + 'gina ' + currentPage + ' de ' + totalPages + ' (' + currentFilteredLeads.length + ' leads)</span>';
+  html += '<button onclick="goToPage(' + (currentPage + 1) + ')" ' + (currentPage===totalPages?'disabled':'') + ' style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer">Pr' + String.fromCharCode(243) + 'ximo &raquo;</button>';
+  pg.innerHTML = html;
+}
+
+function goToPage(page) {
+  var totalPages = Math.ceil(currentFilteredLeads.length / PAGE_SIZE) || 1;
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderTable(currentFilteredLeads);
+  document.getElementById('tableWrap').scrollIntoView({behavior:'smooth'});
 }
 
 function filterTable() {
