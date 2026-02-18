@@ -885,10 +885,10 @@ function renderTable(leads) {
       var waLink = buildWaLink(l.whatsapp, l.business_name || '');
       var waLinkEsc = waLink.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       var date = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '\u2014';
-      return '<tr>'
+      return '<tr id="lead-row-' + l.id + '">'
         + '<td>' + l.id + '</td>'
         + '<td><strong>' + escHtml(l.business_name) + '</strong></td>'
-        + '<td><a class="wa-link" href="' + waLinkEsc + '" target="_blank">' + waFormatted + '</a></td>'
+        + '<td><a class="wa-link" href="' + waLinkEsc + '" target="_blank" onclick="markAsSent(' + l.id + ')">' + waFormatted + '</a></td>'
         + '<td>' + escHtml(l.neighborhood || '\u2014') + '</td>'
         + '<td>' + escHtml(l.category || '\u2014') + '</td>'
         + '<td><span class="badge ' + statusClass + '">' + statusLabel + '</span></td>'
@@ -905,6 +905,32 @@ function filterTable() {
   const q = document.getElementById('filterSearch').value.toLowerCase();
   const filtered = allLeads.filter(function(l) { return l.business_name.toLowerCase().includes(q); });
   renderTable(filtered);
+}
+
+async function markAsSent(leadId) {
+  try {
+    var res = await fetch('/api/leads/' + leadId + '/status', {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({status: 'Sent'})
+    });
+    if (res.ok) {
+      // Update the row badge visually
+      var row = document.getElementById('lead-row-' + leadId);
+      if (row) {
+        var badge = row.querySelector('.badge');
+        if (badge) {
+          badge.className = 'badge badge-sent';
+          badge.textContent = 'Enviado';
+        }
+      }
+      // Update the lead in allLeads array
+      for (var i = 0; i < allLeads.length; i++) {
+        if (allLeads[i].id === leadId) { allLeads[i].status = 'Sent'; break; }
+      }
+      showToast('\u2705 Lead #' + leadId + ' marcado como Enviado', 'success');
+    }
+  } catch(e) { console.error('Erro ao marcar lead:', e); }
 }
 
 function escHtml(s) {
@@ -1159,6 +1185,27 @@ async def _handle_reset_sent(request: web.Request) -> web.Response:
     return web.json_response({"updated": count, "from": from_status, "to": to_status})
 
 
+async def _handle_update_lead_status(request: web.Request) -> web.Response:
+    """Update a single lead's status by ID.  PATCH /api/leads/{id}/status"""
+    lead_id = int(request.match_info["id"])
+    try:
+        body = await request.json()
+    except Exception:
+        return web.json_response({"error": "invalid json"}, status=400)
+    new_status = body.get("status", "")
+    valid = {"Pending", "Sent", "Quente", "Frio", "Convertido", "Falhou"}
+    if new_status not in valid:
+        return web.json_response({"error": "invalid status"}, status=400)
+    pool: asyncpg.Pool = request.app["db_pool"]
+    async with pool.acquire() as conn:
+        result = await conn.execute(
+            "UPDATE leads_olinda SET status = $1 WHERE id = $2", new_status, lead_id
+        )
+        count = int(result.split()[-1]) if result else 0
+    logger.info("Lead #%d status updated to '%s'", lead_id, new_status)
+    return web.json_response({"ok": count > 0, "id": lead_id, "status": new_status})
+
+
 async def _handle_whatsapp_webhook_verify(request: web.Request) -> web.Response:
     """WhatsApp Cloud API webhook verification (GET).
     Meta sends a GET request with hub.mode, hub.verify_token, and hub.challenge.
@@ -1389,6 +1436,7 @@ def create_dashboard_app(pool: asyncpg.Pool, runtime_settings: dict | None = Non
     app.router.add_get("/api/export/csv", _handle_export_csv)
     app.router.add_delete("/api/leads/clear", _handle_clear_leads)
     app.router.add_post("/api/leads/reset-sent", _handle_reset_sent)
+    app.router.add_patch("/api/leads/{id}/status", _handle_update_lead_status)
     app.router.add_get("/api/settings", _handle_get_settings)
     app.router.add_post("/api/settings", _handle_post_settings)
     app.router.add_get("/api/scraper-info", _handle_scraper_info)
