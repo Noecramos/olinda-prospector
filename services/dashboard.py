@@ -833,44 +833,31 @@ function populateNeighborhoodFilter(neighborhoods) {
 }
 
 function buildZappyPitch(businessName) {
-  return [
-    'Ol\u00e1! \ud83d\udc4b',
-    'Somos do Zappy e encontramos sua empresa no Google.',
-    'Parab\u00e9ns pelo trabalho! \ud83c\udf89',
-    'O Zappy \u00e9 uma plataforma de gest\u00e3o completa para Delivery e muito mais:',
-    '',
-    '\ud83d\udcf1 Receber pedidos por WhatsApp automaticamente',
-    '\ud83d\udcca Controlar estoque e Pedidos em tempo real',
-    '\ud83d\udcb0 Sem taxas diferente de outros apps de delivery Voc\u00ea mant\u00e9m *100% do lucro!*',
-    '',
-    'Clique abaixo para dar uma olhada! \ud83d\ude0a',
-    '',
-    'Fa\u00e7a seu cadastro!',
-    '',
-    'Boas Vendas !!!!'
-  ].join(String.fromCharCode(10));
+  var NL = String.fromCharCode(10);
+  return 'Ol' + String.fromCharCode(225) + '! ' + String.fromCodePoint(0x1F44B) + NL
+    + 'Somos do Zappy e encontramos sua empresa no Google.' + NL
+    + 'Parab' + String.fromCharCode(233) + 'ns pelo trabalho! ' + String.fromCodePoint(0x1F389) + NL
+    + 'O Zappy ' + String.fromCharCode(233) + ' uma plataforma de gest' + String.fromCharCode(227) + 'o completa para Delivery e muito mais:' + NL + NL
+    + String.fromCodePoint(0x1F4F1) + ' Receber pedidos por WhatsApp automaticamente' + NL
+    + String.fromCodePoint(0x1F4CA) + ' Controlar estoque e Pedidos em tempo real' + NL
+    + String.fromCodePoint(0x1F4B0) + ' Sem taxas diferente de outros apps de delivery Voc' + String.fromCharCode(234) + ' mant' + String.fromCharCode(233) + 'm *100% do lucro!*' + NL + NL
+    + 'Clique abaixo para dar uma olhada! ' + String.fromCodePoint(0x1F60A) + NL + NL
+    + 'Fa' + String.fromCharCode(231) + 'a seu cadastro!' + NL + NL
+    + 'Boas Vendas !!!!';
 }
 
 function buildLojakyPitch(businessName) {
-  return [
-    'Ol\u00e1! \ud83d\udc4b',
-    '',
-    'Somos do Lojaky e encontrei seu neg\u00f3cio no Google. Parab\u00e9ns pelo trabalho! \ud83c\udf89',
-    '',
-    'O Lojaky \u00e9 uma plataforma de vendas online completa para lojas e muito mais, que ajuda a:',
-    '',
-    '\ud83d\uded2 Vender pelo WhatsApp com Loja Online',
-    '\ud83d\udce6 Controlar estoque e vendas em tempo real',
-    '\ud83d\udcb0 Sem taxas Voc\u00ea mant\u00e9m 100% do lucro!',
-    '',
-    'Segue o link para dar uma olhada! \ud83d\ude0a',
-    '',
-    'https://lojaky.noviapp.com.br/',
-    '',
-    'Se tiver interesse fa\u00e7a seu cadastro sem compromisso aqui: https://lojaky.noviapp.com.br/register',
-    '',
-    'Boas Vendas !!!!'
-  ].join(String.fromCharCode(10));
+  var NL = String.fromCharCode(10);
+  return 'Ol' + String.fromCharCode(225) + '! ' + String.fromCodePoint(0x1F44B) + NL + NL
+    + 'Somos do Lojaky e encontrei seu neg' + String.fromCharCode(243) + 'cio no Google. Parab' + String.fromCharCode(233) + 'ns pelo trabalho! ' + String.fromCodePoint(0x1F389) + NL + NL
+    + 'O Lojaky ' + String.fromCharCode(233) + ' uma plataforma de vendas online completa para lojas e muito mais, que ajuda a:' + NL + NL
+    + String.fromCodePoint(0x1F6D2) + ' Vender pelo WhatsApp com Loja Online' + NL
+    + String.fromCodePoint(0x1F4E6) + ' Controlar estoque e vendas em tempo real' + NL
+    + String.fromCodePoint(0x1F4B0) + ' Sem taxas Voc' + String.fromCharCode(234) + ' mant' + String.fromCharCode(233) + 'm 100% do lucro!' + NL + NL
+    + 'Segue o link para dar uma olhada! ' + String.fromCodePoint(0x1F60A) + NL + NL
+    + 'https://lojaky.noviapp.com.br/' + NL + NL
+    + 'Se tiver interesse fa' + String.fromCharCode(231) + 'a seu cadastro sem compromisso aqui: https://lojaky.noviapp.com.br/register' + NL + NL
+    + 'Boas Vendas !!!!';
 }
 
 function buildWaLink(phone, businessName) {
